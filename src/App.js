@@ -24,8 +24,7 @@
 
 // export default App;
 
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const App = () => {
@@ -46,19 +45,49 @@ const App = () => {
     }
   };
 
+  useEffect(() => {
+    if (connected) {
+      const intervalId = setInterval(() => {
+        fetchHeartRate();
+        fetchRrPeaks();
+        fetchHrv();
+      }, 1000); // Actualiza los datos cada segundo
+
+      return () => clearInterval(intervalId); // Limpia el intervalo al desmontar el componente
+    }
+  }, [connected]);
+
   const fetchHeartRate = async () => {
-    const response = await axios.get('/heart_rate');
-    setHeartRate(response.data.heart_rate);
+    try {
+      const response = await axios.get('/heart_rate');
+      if (response.data.heart_rate !== undefined) {
+        setHeartRate(response.data.heart_rate);
+      }
+    } catch (error) {
+      console.error('Failed to fetch heart rate:', error);
+    }
   };
 
   const fetchRrPeaks = async () => {
-    const response = await axios.get('/rr_peaks');
-    setRrPeaks(response.data.rr_peaks);
+    try {
+      const response = await axios.get('/rr_peaks');
+      if (response.data.rr_peaks !== undefined) {
+        setRrPeaks(response.data.rr_peaks);
+      }
+    } catch (error) {
+      console.error('Failed to fetch RR peaks:', error);
+    }
   };
 
   const fetchHrv = async () => {
-    const response = await axios.get('/hrv');
-    setHrv(response.data.hrv);
+    try {
+      const response = await axios.get('/hrv');
+      if (response.data.hrv !== undefined) {
+        setHrv(response.data.hrv);
+      }
+    } catch (error) {
+      console.error('Failed to fetch HRV:', error);
+    }
   };
 
   return (
@@ -68,11 +97,8 @@ const App = () => {
         {connected ? "Connected" : "Connect to Polar Device"}
       </button>
       <div>
-        <button onClick={fetchHeartRate}>Fetch Heart Rate</button>
         <p>Heart Rate: {heartRate}</p>
-        <button onClick={fetchRrPeaks}>Fetch RR Peaks</button>
         <p>RR Peaks: {rrPeaks}</p>
-        <button onClick={fetchHrv}>Fetch HRV</button>
         <p>HRV: {hrv}</p>
       </div>
     </div>
