@@ -1,44 +1,122 @@
-// import logo from './logo.svg';
-// import './App.css';
+// import React, { useState, useEffect } from 'react';
+// import axios from 'axios';
+// import HRVSculpture from './HRVSculpture';
 
-// function App() {
+
+// const App = () => {
+//   const [connected, setConnected] = useState(false);
+//   const [heartRate, setHeartRate] = useState(null);
+//   const [rrPeaks, setRrPeaks] = useState(null);
+//   const [hrv, setHrv] = useState(null);
+
+//   const connectToDevice = async () => {
+//     try {
+//       const connectResponse = await axios.get('/connect');
+//       if (connectResponse.status === 200) {
+//         setConnected(true);
+//         await axios.get('/start_notifications'); // Inicia notificaciones al conectarse
+//       }
+//     } catch (error) {
+//       console.error('Error connecting to device:', error);
+//     }
+//   };
+
+//   useEffect(() => {
+//     if (connected) {
+//       const intervalId = setInterval(() => {
+//         fetchHeartRate();
+//         fetchRrPeaks();
+//         fetchHrv();
+//       }, 1000); // Actualiza los datos cada segundo
+
+//       return () => clearInterval(intervalId); // Limpia el intervalo al desmontar el componente
+//     }
+//   }, [connected]);
+
+//   const fetchHeartRate = async () => {
+//     try {
+//       const response = await axios.get('/heart_rate');
+//       if (response.data.heart_rate !== undefined) {
+//         setHeartRate(response.data.heart_rate);
+//       }
+//     } catch (error) {
+//       console.error('Failed to fetch heart rate:', error);
+//     }
+//   };
+
+//   const fetchRrPeaks = async () => {
+//     try {
+//       const response = await axios.get('/rr_peaks');
+//       if (response.data.rr_peaks !== undefined) {
+//         setRrPeaks(response.data.rr_peaks);
+//       }
+//     } catch (error) {
+//       console.error('Failed to fetch RR peaks:', error);
+//     }
+//   };
+
+//   const fetchHrv = async () => {
+//     try {
+//       const response = await axios.get('/hrv');
+//       if (response.data.hrv !== undefined) {
+//         setHrv(response.data.hrv);
+//       }
+//     } catch (error) {
+//       console.error('Failed to fetch HRV:', error);
+//     }
+//   };
+
 //   return (
-//     <div className="App">
-//       <header className="App-header">
-//         <img src={logo} className="App-logo" alt="logo" />
-//         <p>
-//           Edit <code>src/App.js</code> and save to reload.
-//         </p>
-//         <a
-//           className="App-link"
-//           href="https://reactjs.org"
-//           target="_blank"
-//           rel="noopener noreferrer"
-//         >
-//           Learn React
-//         </a>
-//       </header>
+//     <div>
+//       <div>
+//         <h1>Polar HR Monitor</h1>
+//         <button onClick={connectToDevice} disabled={connected}>
+//           {connected ? "Connected" : "Connect to Polar Device"}
+//         </button>
+//         <div>
+//           <p>Heart Rate: {heartRate}</p>
+//           <p>RR Peaks: {rrPeaks}</p>
+//           <p>HRV: {hrv}</p>
+//           <HRVSculpture hrv={hrv} />
+//         </div>
+//       </div>
 //     </div>
 //   );
-// }
+// };
 
 // export default App;
 
+
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import HRVSculpture from './HRVSculpture';
 
 const App = () => {
   const [connected, setConnected] = useState(false);
+  const [devices, setDevices] = useState([]);
+  const [selectedDevice, setSelectedDevice] = useState(null);
   const [heartRate, setHeartRate] = useState(null);
   const [rrPeaks, setRrPeaks] = useState(null);
   const [hrv, setHrv] = useState(null);
 
-  const connectToDevice = async () => {
+  const scanDevices = async () => {
     try {
+      const response = await axios.get('/scan');
+      setDevices(response.data);
+    } catch (error) {
+      console.error('Error scanning devices:', error);
+    }
+  };
+
+  const connectToDevice = async (address) => {
+    try {
+      await axios.post('/set_address', { address });
       const connectResponse = await axios.get('/connect');
       if (connectResponse.status === 200) {
         setConnected(true);
-        await axios.get('/start_notifications'); // Inicia notificaciones al conectarse
+        setSelectedDevice(devices.find(device => device.address === address));
+        await axios.get('/start_notifications');
       }
     } catch (error) {
       console.error('Error connecting to device:', error);
@@ -51,56 +129,66 @@ const App = () => {
         fetchHeartRate();
         fetchRrPeaks();
         fetchHrv();
-      }, 1000); // Actualiza los datos cada segundo
-
-      return () => clearInterval(intervalId); // Limpia el intervalo al desmontar el componente
+      }, 1000);
+      return () => clearInterval(intervalId);
     }
   }, [connected]);
 
   const fetchHeartRate = async () => {
-    try {
-      const response = await axios.get('/heart_rate');
-      if (response.data.heart_rate !== undefined) {
-        setHeartRate(response.data.heart_rate);
-      }
-    } catch (error) {
-      console.error('Failed to fetch heart rate:', error);
-    }
+    const response = await axios.get('/heart_rate');
+    setHeartRate(response.data.heart_rate);
   };
 
   const fetchRrPeaks = async () => {
-    try {
-      const response = await axios.get('/rr_peaks');
-      if (response.data.rr_peaks !== undefined) {
-        setRrPeaks(response.data.rr_peaks);
-      }
-    } catch (error) {
-      console.error('Failed to fetch RR peaks:', error);
-    }
+    const response = await axios.get('/rr_peaks');
+    setRrPeaks(response.data.rr_peaks);
   };
 
   const fetchHrv = async () => {
+    const response = await axios.get('/hrv');
+    setHrv(response.data.hrv);
+  };
+
+  const stopNotifications = async () => {
     try {
-      const response = await axios.get('/hrv');
-      if (response.data.hrv !== undefined) {
-        setHrv(response.data.hrv);
+      const response = await axios.get('/stop_notifications');
+      if (response.status === 200) {
+        console.log(response.data.message);  // Opcional, muestra un mensaje de confirmación en la consola
+        setConnected(false);  // Actualiza el estado para reflejar que el dispositivo está desconectado
       }
     } catch (error) {
-      console.error('Failed to fetch HRV:', error);
+      console.error('Error stopping notifications:', error);
     }
   };
 
   return (
     <div>
       <h1>Polar HR Monitor</h1>
-      <button onClick={connectToDevice} disabled={connected}>
-        {connected ? "Connected" : "Connect to Polar Device"}
-      </button>
-      <div>
-        <p>Heart Rate: {heartRate}</p>
-        <p>RR Peaks: {rrPeaks}</p>
-        <p>HRV: {hrv}</p>
-      </div>
+      {!connected && (
+        <div>
+          <button onClick={scanDevices}>Scan for Devices</button>
+          <ul>
+            {devices.map(device => (
+              <li key={device.address}>
+                {device.name}
+                <button onClick={() => connectToDevice(device.address)}>Connect</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {connected && (
+        <div>
+          <button onClick={() => {}}>Connected to {selectedDevice?.name}</button>
+          <button onClick={stopNotifications}>Stop Notifications</button>
+          <div>
+            <p>Heart Rate: {heartRate}</p>
+            <p>RR Peaks: {rrPeaks}</p>
+            <p>HRV: {hrv}</p>
+            <HRVSculpture hrv={hrv} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
