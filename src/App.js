@@ -91,6 +91,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import HRVSculpture from './HRVSculpture';
+import HeartRateChart from './HeartRateChart';
 
 const App = () => {
   const [connected, setConnected] = useState(false);
@@ -99,6 +100,8 @@ const App = () => {
   const [heartRate, setHeartRate] = useState(null);
   const [rrPeaks, setRrPeaks] = useState(null);
   const [hrv, setHrv] = useState(null);
+
+  const [heartRateData, setHeartRateData] = useState([]);
 
   const scanDevices = async () => {
     try {
@@ -137,6 +140,8 @@ const App = () => {
   const fetchHeartRate = async () => {
     const response = await axios.get('/heart_rate');
     setHeartRate(response.data.heart_rate);
+    setHeartRateData(prevData => [...prevData, response.data.heart_rate]);
+    // setHeartRateData(prevData => [...prevData.slice(-50), response.data.heart_rate]);
   };
 
   const fetchRrPeaks = async () => {
@@ -186,6 +191,7 @@ const App = () => {
             <p>RR Peaks: {rrPeaks}</p>
             <p>HRV: {hrv}</p>
             <HRVSculpture hrv={hrv} />
+            <HeartRateChart data={heartRateData} />
           </div>
         </div>
       )}
