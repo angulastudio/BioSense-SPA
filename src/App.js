@@ -94,6 +94,9 @@ import HRVSculpture from './HRVSculpture';
 import HeartRateChart from './HeartRateChart';
 
 const App = () => {
+  const [isScanning, setIsScanning] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+
   const [connected, setConnected] = useState(false);
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState(null);
@@ -104,15 +107,19 @@ const App = () => {
   const [heartRateData, setHeartRateData] = useState([]);
 
   const scanDevices = async () => {
+    setIsScanning(true);
     try {
       const response = await axios.get('/scan');
       setDevices(response.data);
+      setIsScanning(false);
     } catch (error) {
       console.error('Error scanning devices:', error);
+      setIsScanning(false);
     }
   };
-
+  
   const connectToDevice = async (address) => {
+    setIsConnecting(true);
     try {
       await axios.post('/set_address', { address });
       const connectResponse = await axios.get('/connect');
@@ -121,8 +128,10 @@ const App = () => {
         setSelectedDevice(devices.find(device => device.address === address));
         await axios.get('/start_notifications');
       }
+      setIsConnecting(false);
     } catch (error) {
       console.error('Error connecting to device:', error);
+      setIsConnecting(false);
     }
   };
 
@@ -158,8 +167,8 @@ const App = () => {
     try {
       const response = await axios.get('/stop_notifications');
       if (response.status === 200) {
-        console.log(response.data.message);  // Opcional, muestra un mensaje de confirmación en la consola
-        setConnected(false);  // Actualiza el estado para reflejar que el dispositivo está desconectado
+        console.log(response.data.message);
+        setConnected(false);
       }
     } catch (error) {
       console.error('Error stopping notifications:', error);
@@ -170,18 +179,24 @@ const App = () => {
     <div>
       <h1>Polar HR Monitor</h1>
       {!connected && (
-        <div>
-          <button onClick={scanDevices}>Scan for Devices</button>
+      <div>
+        <button onClick={scanDevices} disabled={isScanning}>
+          {isScanning ? 'Scanning...' : 'Scan for Devices'}
+        </button>
+        {isScanning ? <p>Scanning for devices, please wait...</p> : (
           <ul>
             {devices.map(device => (
               <li key={device.address}>
                 {device.name}
-                <button onClick={() => connectToDevice(device.address)}>Connect</button>
+                <button onClick={() => connectToDevice(device.address)} disabled={isConnecting}>
+                  {isConnecting ? 'Connecting...' : 'Connect'}
+                </button>
               </li>
             ))}
           </ul>
-        </div>
-      )}
+        )}
+      </div>
+    )}
       {connected && (
         <div>
           <button onClick={() => {}}>Connected to {selectedDevice?.name}</button>
