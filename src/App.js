@@ -102,9 +102,11 @@ const App = () => {
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [heartRate, setHeartRate] = useState(null);
   const [rrPeaks, setRrPeaks] = useState(null);
-  const [hrv, setHrv] = useState(null);
+  // const [hrv, setHrv] = useState(null);
 
   const [heartRateData, setHeartRateData] = useState([]);
+  const [hrvData, setHrvData] = useState([]); 
+
 
   const scanDevices = async () => {
     setIsScanning(true);
@@ -158,9 +160,16 @@ const App = () => {
     setRrPeaks(response.data.rr_peaks);
   };
 
+
   const fetchHrv = async () => {
-    const response = await axios.get('/hrv');
-    setHrv(response.data.hrv);
+    try {
+      const response = await axios.get('/hrv');
+      if (response.data.hrv !== undefined) {
+        setHrvData(prevData => [...prevData, response.data.hrv]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch HRV:', error);
+    }
   };
 
   const stopNotifications = async () => {
@@ -177,7 +186,7 @@ const App = () => {
 
   return (
     <div>
-      <h1>Polar HR Monitor</h1>
+      <h1>Biosense</h1>
       {!connected && (
       <div>
         <button onClick={scanDevices} disabled={isScanning}>
@@ -204,9 +213,10 @@ const App = () => {
           <div>
             <p>Heart Rate: {heartRate}</p>
             <p>RR Peaks: {rrPeaks}</p>
-            <p>HRV: {hrv}</p>
-            <HRVSculpture hrv={hrv} />
-            <HeartRateChart data={heartRateData} />
+            <p>HRV: {hrvData.length ? hrvData[hrvData.length - 1] : 'No data'}</p>
+            <HRVSculpture hrv={hrvData.length ? hrvData[hrvData.length - 1] : null} />
+            {/* <HeartRateChart data={heartRateData} /> */}
+            <HeartRateChart heartRateData={heartRateData} hrvData={hrvData} />
           </div>
         </div>
       )}

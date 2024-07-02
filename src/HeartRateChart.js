@@ -2,24 +2,47 @@ import React from 'react';
 import { Line } from 'react-chartjs-2';
 import 'chart.js/auto';
 
-const HeartRateChart = ({ data }) => {
+const HeartRateChart = ({ heartRateData, hrvData }) => {
   const chartData = {
-    labels: data.map((_, index) => index), // Genera etiquetas basadas en el índice
+    labels: heartRateData.map((_, index) => index),
     datasets: [
       {
         label: 'Heart Rate (BPM)',
-        data: data,
+        data: heartRateData,
         fill: false,
         backgroundColor: 'rgb(255, 99, 132)',
         borderColor: 'rgba(255, 99, 132, 0.5)',
+        tension: 0.4,
+        pointRadius: 0,
+        yAxisID: 'y',
       },
+      {
+        label: 'HRV (RMSSD)',
+        data: hrvData,
+        fill: false,
+        backgroundColor: 'rgb(54, 162, 235)',
+        borderColor: 'rgba(54, 162, 235, 0.5)',
+        tension: 0.4,
+        pointRadius: 0,
+        yAxisID: 'y1',
+      }
     ],
   };
 
   const options = {
     scales: {
       y: {
-        beginAtZero: false
+        type: 'linear',
+        display: true,
+        position: 'left',
+      },
+      y1: {
+        type: 'linear',
+        display: true,
+        position: 'right',
+        grid: {
+          drawOnChartArea: false,
+        },
       }
     },
     animation: false,
