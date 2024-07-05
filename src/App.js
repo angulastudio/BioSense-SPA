@@ -20,6 +20,8 @@ const App = () => {
   const [timer, setTimer] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
+  const [tags, setTags] = useState([]);
+
 
   const scanDevices = async () => {
     setIsScanning(true);
@@ -117,6 +119,16 @@ const App = () => {
     }
   };
 
+  // Tags
+  const addTag = () => {
+    const newTag = {
+      time: formatTime(timer),
+      heartRate: heartRate,
+      hrv: hrvData.length ? hrvData[hrvData.length - 1] : null
+    };
+    setTags(prevTags => [...prevTags, newTag]);
+  };
+
   // Timer functions
   function formatTime(seconds) {
     const hours = Math.floor(seconds / 3600);
@@ -197,6 +209,7 @@ const App = () => {
                 {isPaused ? "Continue" : "Pause"}
               </button>
               <button onClick={stopAndDisconnect}>Stop and Disconnect</button>
+              <button onClick={addTag}>Add Tag</button>
             </div>
           </div>
           <div>
@@ -205,6 +218,27 @@ const App = () => {
             <p>HRV: {hrvData.length ? hrvData[hrvData.length - 1] : 'No data'}</p>
             <HRVSculpture hrv={hrvData.length ? hrvData[hrvData.length - 1] : null} />
             <HeartRateChart heartRateData={heartRateData} hrvData={hrvData} />
+          </div>
+          <div>
+            <h2>Tags</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Time Elapsed</th>
+                  <th>Heart Rate (BPM)</th>
+                  <th>HRV</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tags.map((tag, index) => (
+                  <tr key={index}>
+                    <td>{tag.time}</td>
+                    <td>{tag.heartRate}</td>
+                    <td>{tag.hrv}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
