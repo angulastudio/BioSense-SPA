@@ -124,7 +124,8 @@ const App = () => {
     const newTag = {
       time: formatTime(timer),
       heartRate: heartRate,
-      hrv: hrvData.length ? hrvData[hrvData.length - 1] : null
+      hrv: hrvData.length ? hrvData[hrvData.length - 1] : null,
+      index: heartRateData.length - 1
     };
     setTags(prevTags => [...prevTags, newTag]);
   };
@@ -217,7 +218,7 @@ const App = () => {
             <p>RR Peaks: {rrPeaks}</p>
             <p>HRV: {hrvData.length ? hrvData[hrvData.length - 1] : 'No data'}</p>
             <HRVSculpture hrv={hrvData.length ? hrvData[hrvData.length - 1] : null} />
-            <HeartRateChart heartRateData={heartRateData} hrvData={hrvData} />
+            <HeartRateChart heartRateData={heartRateData} hrvData={hrvData} tags={tags} />
           </div>
           <div>
             <h2>Tags</h2>
