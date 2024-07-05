@@ -1,93 +1,3 @@
-// import React, { useState, useEffect } from 'react';
-// import axios from 'axios';
-// import HRVSculpture from './HRVSculpture';
-
-
-// const App = () => {
-//   const [connected, setConnected] = useState(false);
-//   const [heartRate, setHeartRate] = useState(null);
-//   const [rrPeaks, setRrPeaks] = useState(null);
-//   const [hrv, setHrv] = useState(null);
-
-//   const connectToDevice = async () => {
-//     try {
-//       const connectResponse = await axios.get('/connect');
-//       if (connectResponse.status === 200) {
-//         setConnected(true);
-//         await axios.get('/start_notifications'); // Inicia notificaciones al conectarse
-//       }
-//     } catch (error) {
-//       console.error('Error connecting to device:', error);
-//     }
-//   };
-
-//   useEffect(() => {
-//     if (connected) {
-//       const intervalId = setInterval(() => {
-//         fetchHeartRate();
-//         fetchRrPeaks();
-//         fetchHrv();
-//       }, 1000); // Actualiza los datos cada segundo
-
-//       return () => clearInterval(intervalId); // Limpia el intervalo al desmontar el componente
-//     }
-//   }, [connected]);
-
-//   const fetchHeartRate = async () => {
-//     try {
-//       const response = await axios.get('/heart_rate');
-//       if (response.data.heart_rate !== undefined) {
-//         setHeartRate(response.data.heart_rate);
-//       }
-//     } catch (error) {
-//       console.error('Failed to fetch heart rate:', error);
-//     }
-//   };
-
-//   const fetchRrPeaks = async () => {
-//     try {
-//       const response = await axios.get('/rr_peaks');
-//       if (response.data.rr_peaks !== undefined) {
-//         setRrPeaks(response.data.rr_peaks);
-//       }
-//     } catch (error) {
-//       console.error('Failed to fetch RR peaks:', error);
-//     }
-//   };
-
-//   const fetchHrv = async () => {
-//     try {
-//       const response = await axios.get('/hrv');
-//       if (response.data.hrv !== undefined) {
-//         setHrv(response.data.hrv);
-//       }
-//     } catch (error) {
-//       console.error('Failed to fetch HRV:', error);
-//     }
-//   };
-
-//   return (
-//     <div>
-//       <div>
-//         <h1>Polar HR Monitor</h1>
-//         <button onClick={connectToDevice} disabled={connected}>
-//           {connected ? "Connected" : "Connect to Polar Device"}
-//         </button>
-//         <div>
-//           <p>Heart Rate: {heartRate}</p>
-//           <p>RR Peaks: {rrPeaks}</p>
-//           <p>HRV: {hrv}</p>
-//           <HRVSculpture hrv={hrv} />
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default App;
-
-
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import HRVSculpture from './HRVSculpture';
@@ -106,6 +16,9 @@ const App = () => {
 
   const [heartRateData, setHeartRateData] = useState([]);
   const [hrvData, setHrvData] = useState([]); 
+
+  const [timer, setTimer] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
 
   const scanDevices = async () => {
@@ -138,15 +51,35 @@ const App = () => {
   };
 
   useEffect(() => {
-    if (connected) {
-      const intervalId = setInterval(() => {
+    let interval = null;
+    
+    if (connected && !isPaused) {
+      interval = setInterval(() => {
+        setTimer(prevTimer => prevTimer + 1);
+      }, 1000);
+    } else {
+      clearInterval(interval);
+    }
+    
+    return () => clearInterval(interval);
+  }, [connected, isPaused]);
+
+  useEffect(() => {
+    let interval = null;
+  
+    if (connected && !isPaused) {
+      interval = setInterval(() => {
         fetchHeartRate();
         fetchRrPeaks();
         fetchHrv();
       }, 1000);
-      return () => clearInterval(intervalId);
+    } else {
+      clearInterval(interval);
     }
-  }, [connected]);
+  
+    return () => clearInterval(interval);
+  }, [connected, isPaused]);
+
 
   const fetchHeartRate = async () => {
     const response = await axios.get('/heart_rate');
@@ -184,6 +117,53 @@ const App = () => {
     }
   };
 
+  // Timer functions
+  function formatTime(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const sec = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+  }
+
+  const togglePause = async () => {
+    setIsPaused(!isPaused);
+    if (!isPaused) {
+      try {
+        const response = await axios.get('/stop_notifications');
+        console.log("Notifications paused.");
+      } catch (error) {
+        console.error('Error pausing notifications:', error);
+      }
+    } else {
+      try {
+        const response = await axios.get('/start_notifications');
+        console.log("Notifications resumed.");
+      } catch (error) {
+        console.error('Error resuming notifications:', error);
+      }
+    }
+  };
+
+  const stopAndDisconnect = async () => {
+    try {
+      if (!isPaused) {
+        await axios.get('/stop_notifications');
+      }
+  
+      const response = await axios.get('/disconnect');
+      if (response.status === 200) {
+        console.log("Disconnected from device.");
+        setConnected(false);
+        setIsPaused(false); 
+        setTimer(0);
+        setHeartRateData([]);
+        setHrvData([]);
+      }
+    } catch (error) {
+      console.error('Error disconnecting:', error);
+    }
+  };
+
   return (
     <div>
       <h1>Biosense</h1>
@@ -211,11 +191,19 @@ const App = () => {
           <button onClick={() => {}}>Connected to {selectedDevice?.name}</button>
           <button onClick={stopNotifications}>Stop Notifications</button>
           <div>
+            <h2>Time Elapsed: {formatTime(timer)}</h2>
+            <div>
+              <button onClick={togglePause}>
+                {isPaused ? "Continue" : "Pause"}
+              </button>
+              <button onClick={stopAndDisconnect}>Stop and Disconnect</button>
+            </div>
+          </div>
+          <div>
             <p>Heart Rate: {heartRate}</p>
             <p>RR Peaks: {rrPeaks}</p>
             <p>HRV: {hrvData.length ? hrvData[hrvData.length - 1] : 'No data'}</p>
             <HRVSculpture hrv={hrvData.length ? hrvData[hrvData.length - 1] : null} />
-            {/* <HeartRateChart data={heartRateData} /> */}
             <HeartRateChart heartRateData={heartRateData} hrvData={hrvData} />
           </div>
         </div>

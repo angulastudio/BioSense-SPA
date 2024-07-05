@@ -30,6 +30,13 @@ const HeartRateChart = ({ heartRateData, hrvData }) => {
   };
 
   const options = {
+    animation: {
+      duration: 0, // general animation time
+    },
+    hover: {
+      animationDuration: 0, // duration of animations when hovering an item
+    },
+    responsiveAnimationDuration: 0, // animation duration after a resize
     scales: {
       y: {
         type: 'linear',
@@ -45,7 +52,6 @@ const HeartRateChart = ({ heartRateData, hrvData }) => {
         },
       }
     },
-    animation: false,
   };
 
   return <Line data={chartData} options={options} />;
