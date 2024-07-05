@@ -62,7 +62,8 @@ const HeartRateChart = ({ heartRateData, hrvData, tags }) => {
           type: 'line',
           xMin: tag.index,
           xMax: tag.index,
-          borderColor: 'red',
+          // borderColor: 'red',
+          borderColor: tag.color,
           borderWidth: 2,
           label: {
             enabled: true,

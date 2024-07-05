@@ -120,12 +120,13 @@ const App = () => {
   };
 
   // Tags
-  const addTag = () => {
+  const addTag = (color) => {
     const newTag = {
       time: formatTime(timer),
       heartRate: heartRate,
       hrv: hrvData.length ? hrvData[hrvData.length - 1] : null,
-      index: heartRateData.length - 1
+      index: heartRateData.length - 1,
+      color: color
     };
     setTags(prevTags => [...prevTags, newTag]);
   };
@@ -210,7 +211,8 @@ const App = () => {
                 {isPaused ? "Continue" : "Pause"}
               </button>
               <button onClick={stopAndDisconnect}>Stop and Disconnect</button>
-              <button onClick={addTag}>Add Tag</button>
+              <button onClick={() => addTag('red')}>Add Tag</button>
+              <button onClick={() => addTag('blue')}>Add Tag 2</button>
             </div>
           </div>
           <div>
