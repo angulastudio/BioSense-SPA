@@ -119,16 +119,29 @@ const App = () => {
     }
   };
 
-  // Tags
-  const addTag = (color) => {
+
+  // Tags Functions
+  const addTag = (color, type) => {
     const newTag = {
       time: formatTime(timer),
       heartRate: heartRate,
       hrv: hrvData.length ? hrvData[hrvData.length - 1] : null,
       index: heartRateData.length - 1,
-      color: color
+      color: color,
+      type: type,
+      comments: ''
     };
     setTags(prevTags => [...prevTags, newTag]);
+  };
+
+  const handleCommentChange = (event, index) => {
+    const newTags = tags.map((tag, i) => {
+      if (i === index) {
+        return { ...tag, comments: event.target.value };
+      }
+      return tag;
+    });
+    setTags(newTags);
   };
 
   // Timer functions
@@ -211,8 +224,8 @@ const App = () => {
                 {isPaused ? "Continue" : "Pause"}
               </button>
               <button onClick={stopAndDisconnect}>Stop and Disconnect</button>
-              <button onClick={() => addTag('red')}>Add Tag</button>
-              <button onClick={() => addTag('blue')}>Add Tag 2</button>
+              <button onClick={() => addTag('red', 'Conflicto')}>Add Red Tag</button>
+              <button onClick={() => addTag('blue', 'Realización')}>Add Blue Tag</button>
             </div>
           </div>
           <div>
@@ -230,6 +243,8 @@ const App = () => {
                   <th>Time Elapsed</th>
                   <th>Heart Rate (BPM)</th>
                   <th>HRV</th>
+                  <th>Type</th>
+                  <th>Comments</th>
                 </tr>
               </thead>
               <tbody>
@@ -238,6 +253,15 @@ const App = () => {
                     <td>{tag.time}</td>
                     <td>{tag.heartRate}</td>
                     <td>{tag.hrv}</td>
+                    <td style={{color: tag.color}}>{tag.type}</td>
+                    <td>
+                      <input
+                        type="text"
+                        value={tag.comments}
+                        onChange={(e) => handleCommentChange(e, index)}
+                        placeholder="Add a comment"
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>
