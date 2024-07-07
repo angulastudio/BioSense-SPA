@@ -185,6 +185,7 @@ const App = () => {
         setTimer(0);
         setHeartRateData([]);
         setHrvData([]);
+        setTags([]);
       }
     } catch (error) {
       console.error('Error disconnecting:', error);
