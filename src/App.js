@@ -1,19 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
-import { AppBar, Toolbar, IconButton, Button, Container, Typography, Box, LinearProgress, CircularProgress, ListItemButton, ListItemText, ListItemIcon, Grid, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField } from '@mui/material';
+
+import { AppBar, Toolbar, IconButton, Button, Typography, Box, LinearProgress, CircularProgress, ListItemButton, ListItemText, ListItemIcon, Grid, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Switch } from '@mui/material';
 import BluetoothIcon from '@mui/icons-material/Bluetooth';
 import MenuIcon from '@mui/icons-material/Menu';
 import HeartIcon from '@mui/icons-material/Favorite';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
+import Brightness2Icon from '@mui/icons-material/Brightness2';
+import WbSunnyIcon from '@mui/icons-material/WbSunny';
 
 import HRVSculpture from './HRVSculpture';
 import HeartRateChart from './HeartRateChart';
 import SummaryView from './SummaryView';
+import { ThemeContext } from './ThemeContext'; 
 
 
 const App = () => {
+  const { darkMode, toggleDarkMode } = useContext(ThemeContext);
+
   const [isScanning, setIsScanning] = useState(false);
   const [connectingDevice, setConnectingDevice] = useState(null);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -228,145 +234,160 @@ const App = () => {
   };
 
   return (
-	<Box sx={{ width: '100%', overflowX: 'hidden' }}>
-	  {connected && (
-		<AppBar position="static" sx={{ width: '100%' }}>
-		  <Toolbar>
-			<IconButton edge="start" color="inherit" aria-label="menu">
-			  <MenuIcon />
-			</IconButton>
-			<Typography variant="h6" sx={{ flexGrow: 1 }}>
-			  Biosense - Connected to {selectedDevice?.name}
-			</Typography>
-			<Typography variant="h6" sx={{ marginRight: 2 }}>
-			  {formatTime(timer)}
-			</Typography>
-			<IconButton
-			  color="inherit"
-			  onClick={togglePause}
-			  sx={{ borderRadius: '50%', backgroundColor: 'white', marginRight: 1 }}
-			>
-			  {isPaused ? <PlayArrowIcon sx={{ color: 'black' }} /> : <PauseIcon sx={{ color: 'black' }} />}
-			</IconButton>
-			<IconButton
-			  color="inherit"
-			  onClick={stopAndDisconnect}
-			  sx={{ borderRadius: '50%', backgroundColor: 'white' }}
-			>
-			  <StopIcon sx={{ color: 'black' }} />
-			</IconButton>
-		  </Toolbar>
-		</AppBar>
-	  )}
-	  <Box sx={{ width: '100%', padding: '16px', boxSizing: 'border-box' }}>
-		{showSummary ? (
-		  <SummaryView
-			heartRateData={summaryData.heartRateData}
-			hrvData={summaryData.hrvData}
-			tags={summaryData.tags}
-			onConnectNewDevice={handleConnectNewDevice}
-		  />
-		) : !connected ? (
-		  <Box>
-			<Button onClick={scanDevices} disabled={isScanning}>
-			  {isScanning ? 'Scanning...' : 'Scan for Devices'}
-			</Button>
-			{isScanning ? <LinearProgress /> : (
-			  <ul>
-				{devices.map(device => (
-				  <ListItemButton key={device.address} onClick={() => connectToDevice(device.address)} disabled={isConnecting}>
-					<ListItemIcon>
-					  <BluetoothIcon />
-					</ListItemIcon>
-					<ListItemText primary={device.name} />
-					{connectingDevice === device.address && <CircularProgress size={24} />}
-				  </ListItemButton>
-				))}
-			  </ul>
-			)}
-		  </Box>
-		) : (
-		  <Box sx={{ width: '100%' }}>
-			<Grid container spacing={2} sx={{ marginTop: 2, width: '100%', paddingX: '16px', boxSizing: 'border-box' }}>
-			  <Grid item xs={12} md={6}>
-				<Card>
-				  <CardContent>
-					<Typography variant="h6">Device: {selectedDevice?.name}</Typography>
-					<Box display="flex" alignItems="center" justifyContent="space-between">
-					  <Typography variant="body1">Heart Rate (BPM)</Typography>
-					  <Typography variant="h4">{heartRate}</Typography>
-					  <HeartIcon color="error" />
+    <Box sx={{ width: '100%', overflowX: 'hidden' }}>
+      <AppBar position="static" sx={{ width: '100%' }}>
+        <Toolbar>
+          <IconButton edge="start" color="inherit" aria-label="menu">
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            Biosense
+          </Typography>
+          {connected && (
+            <>
+              <Box sx={{ display: 'flex', alignItems: 'center', marginRight: 4 }}>
+                <WbSunnyIcon sx={{ marginRight: -0.5 }} />
+                <Switch checked={darkMode} onChange={toggleDarkMode} sx={{ mx: 0.5 }} />
+                <Brightness2Icon sx={{ transform: 'rotate(180deg)', marginLeft: -0.5 }} />
+              </Box>
+              <Typography variant="h6" sx={{ marginRight: 4 }}>
+                {formatTime(timer)}
+              </Typography>
+              <IconButton
+                color="inherit"
+                onClick={togglePause}
+                sx={{ borderRadius: '50%', backgroundColor: 'white', marginRight: 1 }}
+              >
+                {isPaused ? <PlayArrowIcon sx={{ color: 'black' }} /> : <PauseIcon sx={{ color: 'black' }} />}
+              </IconButton>
+              <IconButton
+                color="inherit"
+                onClick={stopAndDisconnect}
+                sx={{ borderRadius: '50%', backgroundColor: 'white' }}
+              >
+                <StopIcon sx={{ color: 'black' }} />
+              </IconButton>
+            </>
+          )}
+        </Toolbar>
+      </AppBar>
+      <Box sx={{ width: '100%', padding: '16px', boxSizing: 'border-box' }}>
+        {showSummary ? (
+          <SummaryView
+            heartRateData={summaryData.heartRateData}
+            hrvData={summaryData.hrvData}
+            tags={summaryData.tags}
+            onConnectNewDevice={handleConnectNewDevice}
+          />
+        ) : !connected ? (
+          <Box>
+            <Button onClick={scanDevices} disabled={isScanning}>
+              {isScanning ? 'Scanning...' : 'Scan for Devices'}
+            </Button>
+            {isScanning ? <LinearProgress /> : (
+              <ul>
+                {devices.map(device => (
+                  <ListItemButton key={device.address} onClick={() => connectToDevice(device.address)} disabled={isConnecting}>
+                    <ListItemIcon>
+                      <BluetoothIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={device.name} />
+                    {connectingDevice === device.address && <CircularProgress size={24} />}
+                  </ListItemButton>
+                ))}
+              </ul>
+            )}
+          </Box>
+        ) : (
+          <Box sx={{ width: '100%' }}>
+            <Grid container spacing={2} sx={{ marginTop: 2, width: '100%', paddingX: '16px', boxSizing: 'border-box' }}>
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6">Device: {selectedDevice?.name}</Typography>
+                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                      <Typography variant="body1">Heart Rate (BPM)</Typography>
+                      <Typography variant="h4">{heartRate}</Typography>
+                      <HeartIcon color="error" />
+                    </Box>
+                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                      <Typography variant="body1">RR-Peaks</Typography>
+                      <Typography variant="h4">{rrPeaks}</Typography>
+                    </Box>
+                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                      <Typography variant="body1">HRV (RMSSD)</Typography>
+                      <Typography variant="h4">{hrvData.length ? hrvData[hrvData.length - 1] : 'No data'}</Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <HRVSculpture hrv={hrvData.length ? hrvData[hrvData.length - 1] : null} />
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+			  	<Card>
+			  	  <CardContent>
+					<Box display="flex" justifyContent="space-between" alignItems="center">
+					<Typography variant="h6">Heart Rate and HRV Chart</Typography>
+					<Box>
+						<Button onClick={() => addTag('red', 'Conflicto')} sx={{ marginRight: 1 }}>Add Red Tag</Button>
+						<Button onClick={() => addTag('blue', 'Realización')}>Add Blue Tag</Button>
 					</Box>
-					<Box display="flex" alignItems="center" justifyContent="space-between">
-					  <Typography variant="body1">RR-Peaks</Typography>
-					  <Typography variant="h4">{rrPeaks}</Typography>
 					</Box>
-					<Box display="flex" alignItems="center" justifyContent="space-between">
-					  <Typography variant="body1">HRV (RMSSD)</Typography>
-					  <Typography variant="h4">{hrvData.length ? hrvData[hrvData.length - 1] : 'No data'}</Typography>
-					</Box>
+                	<HeartRateChart heartRateData={heartRateData} hrvData={hrvData} tags={tags} />
 				  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+			   <Card>
+			    <CardContent>
+					<Box>
+					<Typography variant="h6">Tags</Typography>
+					<TableContainer component={Paper} sx={{ boxShadow: 'none' }}>
+						<Table>
+						<TableHead>
+							<TableRow>
+							<TableCell>Time Elapsed</TableCell>
+							<TableCell>Heart Rate (BPM)</TableCell>
+							<TableCell>HRV</TableCell>
+							<TableCell>Type</TableCell>
+							<TableCell>Comments</TableCell>
+							</TableRow>
+						</TableHead>
+						<TableBody>
+							{tags.map((tag, index) => (
+							<TableRow key={index}>
+								<TableCell>{tag.time}</TableCell>
+								<TableCell>{tag.heartRate}</TableCell>
+								<TableCell>{tag.hrv}</TableCell>
+								<TableCell sx={{ color: tag.color }}>{tag.type}</TableCell>
+								<TableCell>
+								<TextField
+									variant="outlined"
+									fullWidth
+									value={tag.comments}
+									onChange={(e) => handleCommentChange(e, index)}
+									placeholder="Add a comment"
+								/>
+								</TableCell>
+							</TableRow>
+							))}
+						</TableBody>
+						</Table>
+					</TableContainer>
+					</Box>
+				 </CardContent>
 				</Card>
-			  </Grid>
-			  <Grid item xs={12} md={6}>
-				<Card>
-				  <CardContent>
-					<HRVSculpture hrv={hrvData.length ? hrvData[hrvData.length - 1] : null} />
-				  </CardContent>
-				</Card>
-			  </Grid>
-			  <Grid item xs={12} md={6}>
-				<Box display="flex" justifyContent="space-between" alignItems="center">
-				  <Typography variant="h6">Heart Rate and HRV Chart</Typography>
-				  <Box>
-					<Button onClick={() => addTag('red', 'Conflicto')} sx={{ marginRight: 1 }}>Add Red Tag</Button>
-					<Button onClick={() => addTag('blue', 'Realización')}>Add Blue Tag</Button>
-				  </Box>
-				</Box>
-				<HeartRateChart heartRateData={heartRateData} hrvData={hrvData} tags={tags} />
-			  </Grid>
-			  <Grid item xs={12} md={6}>
-				<Box>
-				  <Typography variant="h6">Tags</Typography>
-				  <TableContainer component={Paper}>
-					<Table>
-					  <TableHead>
-						<TableRow>
-						  <TableCell>Time Elapsed</TableCell>
-						  <TableCell>Heart Rate (BPM)</TableCell>
-						  <TableCell>HRV</TableCell>
-						  <TableCell>Type</TableCell>
-						  <TableCell>Comments</TableCell>
-						</TableRow>
-					  </TableHead>
-					  <TableBody>
-						{tags.map((tag, index) => (
-						  <TableRow key={index}>
-							<TableCell>{tag.time}</TableCell>
-							<TableCell>{tag.heartRate}</TableCell>
-							<TableCell>{tag.hrv}</TableCell>
-							<TableCell sx={{ color: tag.color }}>{tag.type}</TableCell>
-							<TableCell>
-							  <TextField
-								variant="outlined"
-								fullWidth
-								value={tag.comments}
-								onChange={(e) => handleCommentChange(e, index)}
-								placeholder="Add a comment"
-							  />
-							</TableCell>
-						  </TableRow>
-						))}
-					  </TableBody>
-					</Table>
-				  </TableContainer>
-				</Box>
-			  </Grid>
-			</Grid>
-		  </Box>
-		)}
-	  </Box>
-	</Box>
+              </Grid>
+            </Grid>
+          </Box>
+        )}
+      </Box>
+    </Box>
   );
 };
 
