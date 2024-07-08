@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import HRVSculpture from './HRVSculpture';
 import HeartRateChart from './HeartRateChart';
+import SummaryView from './SummaryView';
 
 const App = () => {
   const [isScanning, setIsScanning] = useState(false);
@@ -21,6 +22,14 @@ const App = () => {
   const [isPaused, setIsPaused] = useState(false);
 
   const [tags, setTags] = useState([]);
+
+  const [showSummary, setShowSummary] = useState(false);
+
+  const [summaryData, setSummaryData] = useState({
+	heartRateData: [],
+	hrvData: [],
+	tags: [],
+  });
 
 
   const scanDevices = async () => {
@@ -172,105 +181,124 @@ const App = () => {
   };
 
   const stopAndDisconnect = async () => {
-    try {
-      if (!isPaused) {
-        await axios.get('/stop_notifications');
-      }
+	try {
+	  if (!isPaused) {
+		await axios.get('/stop_notifications');
+	  }
+	  const response = await axios.get('/disconnect');
+	  if (response.status === 200) {
+		console.log("Disconnected from device.");
   
-      const response = await axios.get('/disconnect');
-      if (response.status === 200) {
-        console.log("Disconnected from device.");
-        setConnected(false);
-        setIsPaused(false); 
-        setTimer(0);
-        setHeartRateData([]);
-        setHrvData([]);
-        setTags([]);
-      }
-    } catch (error) {
-      console.error('Error disconnecting:', error);
-    }
+		const summary = {
+		  heartRateData: [...heartRateData],
+		  hrvData: [...hrvData],
+		  tags: [...tags],
+		};
+		setSummaryData(summary);
+		
+		setConnected(false);
+		setIsPaused(false);
+		setTimer(0);
+		setHeartRateData([]);
+		setHrvData([]);
+		setTags([]);
+		setShowSummary(true);
+	  }
+	} catch (error) {
+	  console.error('Error disconnecting:', error);
+	}
+  };
+
+  const handleConnectNewDevice = () => {
+    setShowSummary(false);
+    scanDevices();
   };
 
   return (
-    <div>
-      <h1>Biosense</h1>
-      {!connected && (
-      <div>
-        <button onClick={scanDevices} disabled={isScanning}>
-          {isScanning ? 'Scanning...' : 'Scan for Devices'}
-        </button>
-        {isScanning ? <p>Scanning for devices, please wait...</p> : (
-          <ul>
-            {devices.map(device => (
-              <li key={device.address}>
-                {device.name}
-                <button onClick={() => connectToDevice(device.address)} disabled={isConnecting}>
-                  {isConnecting ? 'Connecting...' : 'Connect'}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    )}
-      {connected && (
-        <div>
-          <button onClick={() => {}}>Connected to {selectedDevice?.name}</button>
-          <button onClick={stopNotifications}>Stop Notifications</button>
-          <div>
-            <h2>Time Elapsed: {formatTime(timer)}</h2>
-            <div>
-              <button onClick={togglePause}>
-                {isPaused ? "Continue" : "Pause"}
-              </button>
-              <button onClick={stopAndDisconnect}>Stop and Disconnect</button>
-              <button onClick={() => addTag('red', 'Conflicto')}>Add Red Tag</button>
-              <button onClick={() => addTag('blue', 'Realización')}>Add Blue Tag</button>
-            </div>
-          </div>
-          <div>
-            <p>Heart Rate: {heartRate}</p>
-            <p>RR Peaks: {rrPeaks}</p>
-            <p>HRV: {hrvData.length ? hrvData[hrvData.length - 1] : 'No data'}</p>
-            <HRVSculpture hrv={hrvData.length ? hrvData[hrvData.length - 1] : null} />
-            <HeartRateChart heartRateData={heartRateData} hrvData={hrvData} tags={tags} />
-          </div>
-          <div>
-            <h2>Tags</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Time Elapsed</th>
-                  <th>Heart Rate (BPM)</th>
-                  <th>HRV</th>
-                  <th>Type</th>
-                  <th>Comments</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tags.map((tag, index) => (
-                  <tr key={index}>
-                    <td>{tag.time}</td>
-                    <td>{tag.heartRate}</td>
-                    <td>{tag.hrv}</td>
-                    <td style={{color: tag.color}}>{tag.type}</td>
-                    <td>
-                      <input
-                        type="text"
-                        value={tag.comments}
-                        onChange={(e) => handleCommentChange(e, index)}
-                        placeholder="Add a comment"
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
+	<div>
+	  <h1>Biosense</h1>
+	  {showSummary ? (
+		<SummaryView
+		  heartRateData={summaryData.heartRateData}
+		  hrvData={summaryData.hrvData}
+		  tags={summaryData.tags}
+		  onConnectNewDevice={handleConnectNewDevice}
+		/>
+	  ) : !connected ? (
+		<div>
+		  <button onClick={scanDevices} disabled={isScanning}>
+			{isScanning ? 'Scanning...' : 'Scan for Devices'}
+		  </button>
+		  {isScanning ? <p>Scanning for devices, please wait...</p> : (
+			<ul>
+			  {devices.map(device => (
+				<li key={device.address}>
+				  {device.name}
+				  <button onClick={() => connectToDevice(device.address)} disabled={isConnecting}>
+					{isConnecting ? 'Connecting...' : 'Connect'}
+				  </button>
+				</li>
+			  ))}
+			</ul>
+		  )}
+		</div>
+	  ) : (
+		<div>
+		  <button onClick={() => {}}>Connected to {selectedDevice?.name}</button>
+		  <button onClick={stopNotifications}>Stop Notifications</button>
+		  <div>
+			<h2>Time Elapsed: {formatTime(timer)}</h2>
+			<div>
+			  <button onClick={togglePause}>
+				{isPaused ? "Continue" : "Pause"}
+			  </button>
+			  <button onClick={stopAndDisconnect}>Stop and Disconnect</button>
+			  <button onClick={() => addTag('red', 'Conflicto')}>Add Red Tag</button>
+			  <button onClick={() => addTag('blue', 'Realización')}>Add Blue Tag</button>
+			</div>
+		  </div>
+		  <div>
+			<p>Heart Rate: {heartRate}</p>
+			<p>RR Peaks: {rrPeaks}</p>
+			<p>HRV: {hrvData.length ? hrvData[hrvData.length - 1] : 'No data'}</p>
+			<HRVSculpture hrv={hrvData.length ? hrvData[hrvData.length - 1] : null} />
+			<HeartRateChart heartRateData={heartRateData} hrvData={hrvData} tags={tags} />
+		  </div>
+		  <div>
+			<h2>Tags</h2>
+			<table>
+			  <thead>
+				<tr>
+				  <th>Time Elapsed</th>
+				  <th>Heart Rate (BPM)</th>
+				  <th>HRV</th>
+				  <th>Type</th>
+				  <th>Comments</th>
+				</tr>
+			  </thead>
+			  <tbody>
+				{tags.map((tag, index) => (
+				  <tr key={index}>
+					<td>{tag.time}</td>
+					<td>{tag.heartRate}</td>
+					<td>{tag.hrv}</td>
+					<td style={{color: tag.color}}>{tag.type}</td>
+					<td>
+					  <input
+						type="text"
+						value={tag.comments}
+						onChange={(e) => handleCommentChange(e, index)}
+						placeholder="Add a comment"
+					  />
+					</td>
+				  </tr>
+				))}
+			  </tbody>
+			</table>
+		  </div>
+		</div>
+	  )}
+	</div>
   );
 };
 
