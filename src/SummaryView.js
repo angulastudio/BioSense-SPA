@@ -2,15 +2,30 @@ import React from 'react';
 import { Box, Typography, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Grid } from '@mui/material';
 import HeartRateChart from './HeartRateChart';
 import HeartIcon from '@mui/icons-material/Favorite';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const SummaryView = ({ heartRateData, hrvData, tags, onConnectNewDevice }) => {
   const averageHeartRate = (heartRateData.reduce((acc, curr) => acc + curr, 0) / heartRateData.length).toFixed(2);
   const averageHrv = (hrvData.reduce((acc, curr) => acc + curr, 0) / hrvData.length).toFixed(2);
 
+  const downloadPDF = () => {
+    const input = document.getElementById('summary-content');
+    html2canvas(input).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save('session_summary.pdf');
+    });
+  };
+
   return (
     <Box sx={{ width: '100%', padding: '16px', boxSizing: 'border-box' }}>
-      <Typography variant="h4" gutterBottom sx={{ marginLeft: 2 }}>Session Summary</Typography>
-      <Grid container spacing={2} sx={{ marginTop: 2, width: '100%', paddingX: '16px', boxSizing: 'border-box' }}>
+      <Typography variant="h4" gutterBottom>Session Summary</Typography>
+      <Grid container spacing={2} sx={{ marginTop: 2, width: '100%', paddingX: '16px', boxSizing: 'border-box' }} id="summary-content">
         <Grid item xs={12}>
           <Card>
             <CardContent>
@@ -68,6 +83,7 @@ const SummaryView = ({ heartRateData, hrvData, tags, onConnectNewDevice }) => {
         </Grid>
       </Grid>
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: 4 }}>
+        <Button variant="contained" color="primary" onClick={downloadPDF} sx={{ marginRight: 2 }}>Download</Button>
         <Button variant="contained" color="primary" onClick={onConnectNewDevice}>Connect New Device</Button>
       </Box>
     </Box>
