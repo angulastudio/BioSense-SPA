@@ -305,7 +305,21 @@ const App = () => {
 				  ) : (
 					<Box sx={{ width: '100%' }}>
 					  <ul style={{ paddingLeft: '0px', width: '100%' }}>
-						{devices.map(device => (
+						{Array.isArray(devices) ? devices.map(device => (
+							<ListItemButton
+							key={device.address}
+							onClick={() => connectToDevice(device.address)}
+							disabled={isConnecting}
+							sx={{ width: '100%' }}
+							>
+							<ListItemIcon>
+								<BluetoothIcon />
+							</ListItemIcon>
+							<ListItemText primary={device.name} />
+							{connectingDevice === device.address && <CircularProgress size={24} />}
+							</ListItemButton>
+						)) : <p>No devices found</p>}
+						{/* {devices.map(device => (
 						  <ListItemButton key={device.address} onClick={() => connectToDevice(device.address)} disabled={isConnecting} sx={{ width: '100%' }}>
 							<ListItemIcon>
 							  <BluetoothIcon />
@@ -313,7 +327,7 @@ const App = () => {
 							<ListItemText primary={device.name} />
 							{connectingDevice === device.address && <CircularProgress size={24} />}
 						  </ListItemButton>
-						))}
+						))} */}
 					  </ul>
 					</Box>
 				  )}
