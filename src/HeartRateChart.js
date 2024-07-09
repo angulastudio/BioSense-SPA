@@ -1,8 +1,12 @@
 import React from 'react';
 import { Line } from 'react-chartjs-2';
 import 'chart.js/auto';
+import { Chart, registerables } from 'chart.js';
+import annotationPlugin from 'chartjs-plugin-annotation';
 
-const HeartRateChart = ({ heartRateData, hrvData }) => {
+Chart.register(...registerables, annotationPlugin);
+
+const HeartRateChart = ({ heartRateData, hrvData, tags }) => {
   const chartData = {
     labels: heartRateData.map((_, index) => index),
     datasets: [
@@ -30,6 +34,13 @@ const HeartRateChart = ({ heartRateData, hrvData }) => {
   };
 
   const options = {
+    animation: {
+      duration: 0,
+    },
+    hover: {
+      animationDuration: 0,
+    },
+    responsiveAnimationDuration: 0,
     scales: {
       y: {
         type: 'linear',
@@ -45,7 +56,23 @@ const HeartRateChart = ({ heartRateData, hrvData }) => {
         },
       }
     },
-    animation: false,
+    plugins: {
+      annotation: {
+        annotations: tags.map(tag => ({
+          type: 'line',
+          xMin: tag.index,
+          xMax: tag.index,
+          // borderColor: 'red',
+          borderColor: tag.color,
+          borderWidth: 2,
+          label: {
+            enabled: true,
+            content: 'Tag',
+            position: 'start'
+          }
+        }))
+      }
+    },
   };
 
   return <Line data={chartData} options={options} />;

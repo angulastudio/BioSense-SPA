@@ -1,100 +1,27 @@
-// import React, { useState, useEffect } from 'react';
-// import axios from 'axios';
-// import HRVSculpture from './HRVSculpture';
-
-
-// const App = () => {
-//   const [connected, setConnected] = useState(false);
-//   const [heartRate, setHeartRate] = useState(null);
-//   const [rrPeaks, setRrPeaks] = useState(null);
-//   const [hrv, setHrv] = useState(null);
-
-//   const connectToDevice = async () => {
-//     try {
-//       const connectResponse = await axios.get('/connect');
-//       if (connectResponse.status === 200) {
-//         setConnected(true);
-//         await axios.get('/start_notifications'); // Inicia notificaciones al conectarse
-//       }
-//     } catch (error) {
-//       console.error('Error connecting to device:', error);
-//     }
-//   };
-
-//   useEffect(() => {
-//     if (connected) {
-//       const intervalId = setInterval(() => {
-//         fetchHeartRate();
-//         fetchRrPeaks();
-//         fetchHrv();
-//       }, 1000); // Actualiza los datos cada segundo
-
-//       return () => clearInterval(intervalId); // Limpia el intervalo al desmontar el componente
-//     }
-//   }, [connected]);
-
-//   const fetchHeartRate = async () => {
-//     try {
-//       const response = await axios.get('/heart_rate');
-//       if (response.data.heart_rate !== undefined) {
-//         setHeartRate(response.data.heart_rate);
-//       }
-//     } catch (error) {
-//       console.error('Failed to fetch heart rate:', error);
-//     }
-//   };
-
-//   const fetchRrPeaks = async () => {
-//     try {
-//       const response = await axios.get('/rr_peaks');
-//       if (response.data.rr_peaks !== undefined) {
-//         setRrPeaks(response.data.rr_peaks);
-//       }
-//     } catch (error) {
-//       console.error('Failed to fetch RR peaks:', error);
-//     }
-//   };
-
-//   const fetchHrv = async () => {
-//     try {
-//       const response = await axios.get('/hrv');
-//       if (response.data.hrv !== undefined) {
-//         setHrv(response.data.hrv);
-//       }
-//     } catch (error) {
-//       console.error('Failed to fetch HRV:', error);
-//     }
-//   };
-
-//   return (
-//     <div>
-//       <div>
-//         <h1>Polar HR Monitor</h1>
-//         <button onClick={connectToDevice} disabled={connected}>
-//           {connected ? "Connected" : "Connect to Polar Device"}
-//         </button>
-//         <div>
-//           <p>Heart Rate: {heartRate}</p>
-//           <p>RR Peaks: {rrPeaks}</p>
-//           <p>HRV: {hrv}</p>
-//           <HRVSculpture hrv={hrv} />
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default App;
-
-
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+
+import { AppBar, Toolbar, IconButton, Button, Typography, Box, LinearProgress, CircularProgress, ListItemButton, ListItemText, ListItemIcon, Grid, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Switch, TablePagination } from '@mui/material';
+import BluetoothIcon from '@mui/icons-material/Bluetooth';
+import MenuIcon from '@mui/icons-material/Menu';
+import HeartIcon from '@mui/icons-material/Favorite';
+import PauseIcon from '@mui/icons-material/Pause';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StopIcon from '@mui/icons-material/Stop';
+import Brightness2Icon from '@mui/icons-material/Brightness2';
+import WbSunnyIcon from '@mui/icons-material/WbSunny';
+
 import HRVSculpture from './HRVSculpture';
 import HeartRateChart from './HeartRateChart';
+import SummaryView from './SummaryView';
+import { ThemeContext } from './ThemeContext'; 
+
 
 const App = () => {
+  const { darkMode, toggleDarkMode } = useContext(ThemeContext);
+
   const [isScanning, setIsScanning] = useState(false);
+  const [connectingDevice, setConnectingDevice] = useState(null);
   const [isConnecting, setIsConnecting] = useState(false);
 
   const [connected, setConnected] = useState(false);
@@ -106,6 +33,31 @@ const App = () => {
 
   const [heartRateData, setHeartRateData] = useState([]);
   const [hrvData, setHrvData] = useState([]); 
+
+  const [timer, setTimer] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const [tags, setTags] = useState([]);
+
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  const [showSummary, setShowSummary] = useState(false);
+
+  const [summaryData, setSummaryData] = useState({
+	heartRateData: [],
+	hrvData: [],
+	tags: [],
+  });
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
 
   const scanDevices = async () => {
@@ -121,32 +73,55 @@ const App = () => {
   };
   
   const connectToDevice = async (address) => {
-    setIsConnecting(true);
-    try {
-      await axios.post('/set_address', { address });
-      const connectResponse = await axios.get('/connect');
-      if (connectResponse.status === 200) {
-        setConnected(true);
-        setSelectedDevice(devices.find(device => device.address === address));
-        await axios.get('/start_notifications');
-      }
-      setIsConnecting(false);
-    } catch (error) {
-      console.error('Error connecting to device:', error);
-      setIsConnecting(false);
-    }
+	setConnectingDevice(address);
+	setIsConnecting(true);
+	try {
+	  await axios.post('/set_address', { address });
+	  const connectResponse = await axios.get('/connect');
+	  if (connectResponse.status === 200) {
+		setConnected(true);
+		setSelectedDevice(devices.find(device => device.address === address));
+		await axios.get('/start_notifications');
+	  }
+	  setIsConnecting(false);
+	  setConnectingDevice(null);
+	} catch (error) {
+	  console.error('Error connecting to device:', error);
+	  setIsConnecting(false);
+	  setConnectingDevice(null);
+	}
   };
 
   useEffect(() => {
-    if (connected) {
-      const intervalId = setInterval(() => {
+    let interval = null;
+    
+    if (connected && !isPaused) {
+      interval = setInterval(() => {
+        setTimer(prevTimer => prevTimer + 1);
+      }, 1000);
+    } else {
+      clearInterval(interval);
+    }
+    
+    return () => clearInterval(interval);
+  }, [connected, isPaused]);
+
+  useEffect(() => {
+    let interval = null;
+  
+    if (connected && !isPaused) {
+      interval = setInterval(() => {
         fetchHeartRate();
         fetchRrPeaks();
         fetchHrv();
       }, 1000);
-      return () => clearInterval(intervalId);
+    } else {
+      clearInterval(interval);
     }
-  }, [connected]);
+  
+    return () => clearInterval(interval);
+  }, [connected, isPaused]);
+
 
   const fetchHeartRate = async () => {
     const response = await axios.get('/heart_rate');
@@ -184,43 +159,267 @@ const App = () => {
     }
   };
 
+
+  // Tags Functions
+  const addTag = (color, type) => {
+    const newTag = {
+      time: formatTime(timer),
+      heartRate: heartRate,
+      hrv: hrvData.length ? hrvData[hrvData.length - 1] : null,
+      index: heartRateData.length - 1,
+      color: color,
+      type: type,
+      comments: ''
+    };
+    setTags(prevTags => [...prevTags, newTag]);
+  };
+
+  const handleCommentChange = (event, index) => {
+    const newTags = tags.map((tag, i) => {
+      if (i === index) {
+        return { ...tag, comments: event.target.value };
+      }
+      return tag;
+    });
+    setTags(newTags);
+  };
+
+  // Timer functions
+  function formatTime(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const sec = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+  }
+
+  const togglePause = async () => {
+    setIsPaused(!isPaused);
+    if (!isPaused) {
+      try {
+        const response = await axios.get('/stop_notifications');
+        console.log("Notifications paused.");
+      } catch (error) {
+        console.error('Error pausing notifications:', error);
+      }
+    } else {
+      try {
+        const response = await axios.get('/start_notifications');
+        console.log("Notifications resumed.");
+      } catch (error) {
+        console.error('Error resuming notifications:', error);
+      }
+    }
+  };
+
+  const stopAndDisconnect = async () => {
+	try {
+	  if (!isPaused) {
+		await axios.get('/stop_notifications');
+	  }
+	  const response = await axios.get('/disconnect');
+	  if (response.status === 200) {
+		console.log("Disconnected from device.");
+  
+		const summary = {
+		  heartRateData: [...heartRateData],
+		  hrvData: [...hrvData],
+		  tags: [...tags],
+		};
+		setSummaryData(summary);
+		
+		setConnected(false);
+		setIsPaused(false);
+		setTimer(0);
+		setHeartRateData([]);
+		setHrvData([]);
+		setTags([]);
+		setShowSummary(true);
+	  }
+	} catch (error) {
+	  console.error('Error disconnecting:', error);
+	}
+  };
+
+  const handleConnectNewDevice = () => {
+    setShowSummary(false);
+    scanDevices();
+  };
+
   return (
-    <div>
-      <h1>Biosense</h1>
-      {!connected && (
-      <div>
-        <button onClick={scanDevices} disabled={isScanning}>
-          {isScanning ? 'Scanning...' : 'Scan for Devices'}
-        </button>
-        {isScanning ? <p>Scanning for devices, please wait...</p> : (
-          <ul>
-            {devices.map(device => (
-              <li key={device.address}>
-                {device.name}
-                <button onClick={() => connectToDevice(device.address)} disabled={isConnecting}>
-                  {isConnecting ? 'Connecting...' : 'Connect'}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    )}
-      {connected && (
-        <div>
-          <button onClick={() => {}}>Connected to {selectedDevice?.name}</button>
-          <button onClick={stopNotifications}>Stop Notifications</button>
-          <div>
-            <p>Heart Rate: {heartRate}</p>
-            <p>RR Peaks: {rrPeaks}</p>
-            <p>HRV: {hrvData.length ? hrvData[hrvData.length - 1] : 'No data'}</p>
-            <HRVSculpture hrv={hrvData.length ? hrvData[hrvData.length - 1] : null} />
-            {/* <HeartRateChart data={heartRateData} /> */}
-            <HeartRateChart heartRateData={heartRateData} hrvData={hrvData} />
-          </div>
-        </div>
-      )}
-    </div>
+	<Box sx={{ width: '100%', overflowX: 'hidden' }}>
+	  <AppBar position="static" sx={{ width: '100%' }}>
+		<Toolbar>
+		  <IconButton edge="start" color="inherit" aria-label="menu">
+			<MenuIcon />
+		  </IconButton>
+		  <Typography variant="h6" sx={{ flexGrow: 1 }}>
+			Biosense
+		  </Typography>
+		  <Box sx={{ display: 'flex', alignItems: 'center', marginRight: 4 }}>
+			<WbSunnyIcon sx={{ marginRight: 0.5 }} />
+			<Switch checked={darkMode} onChange={toggleDarkMode} sx={{ mx: 0.5 }} />
+			<Brightness2Icon sx={{ transform: 'rotate(180deg)', marginLeft: 0.5 }} />
+		  </Box>
+		  {connected && (
+			<>
+			  <Typography variant="h6" sx={{ marginRight: 4 }}>
+				{formatTime(timer)}
+			  </Typography>
+			  <IconButton
+				color="inherit"
+				onClick={togglePause}
+				sx={{ borderRadius: '50%', backgroundColor: 'white', marginRight: 1 }}
+			  >
+				{isPaused ? <PlayArrowIcon sx={{ color: 'black' }} /> : <PauseIcon sx={{ color: 'black' }} />}
+			  </IconButton>
+			  <IconButton
+				color="inherit"
+				onClick={stopAndDisconnect}
+				sx={{ borderRadius: '50%', backgroundColor: 'white' }}
+			  >
+				<StopIcon sx={{ color: 'black' }} />
+			  </IconButton>
+			</>
+		  )}
+		</Toolbar>
+	  </AppBar>
+	  <Box sx={{ width: '100%', padding: '16px', boxSizing: 'border-box' }}>
+		{showSummary ? (
+		  <SummaryView
+			heartRateData={summaryData.heartRateData}
+			hrvData={summaryData.hrvData}
+			tags={summaryData.tags}
+			onConnectNewDevice={handleConnectNewDevice}
+		  />
+		) : !connected ? (
+		  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+			<Card sx={{ width: '80%', maxWidth: '600px' }}>
+			  <CardContent>
+				<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+				  <Button onClick={scanDevices} disabled={isScanning} fullWidth variant="contained" color="primary">
+					{isScanning ? 'Scanning...' : 'Scan for Devices'}
+				  </Button>
+				  {isScanning ? (
+					<LinearProgress sx={{ marginTop: 2, width: '100%' }} />
+				  ) : (
+					<Box sx={{ width: '100%' }}>
+					  <ul style={{ paddingLeft: '0px', width: '100%' }}>
+						{devices.map(device => (
+						  <ListItemButton key={device.address} onClick={() => connectToDevice(device.address)} disabled={isConnecting} sx={{ width: '100%' }}>
+							<ListItemIcon>
+							  <BluetoothIcon />
+							</ListItemIcon>
+							<ListItemText primary={device.name} />
+							{connectingDevice === device.address && <CircularProgress size={24} />}
+						  </ListItemButton>
+						))}
+					  </ul>
+					</Box>
+				  )}
+				</Box>
+			  </CardContent>
+			</Card>
+		  </Box>
+		) : (
+		  <Box sx={{ width: '100%' }}>
+			<Grid container spacing={2} sx={{ marginTop: 2, width: '100%', paddingX: '16px', boxSizing: 'border-box' }}>
+			  <Grid item xs={12} md={6}>
+				<Card sx={{ height: '100%' }}>
+				  <CardContent>
+					<Box sx={{ display: 'flex', alignItems: 'center' }}>
+					  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+						<Typography variant="body1">Heart Rate (BPM)</Typography>
+						<Typography variant="h4">{heartRate}</Typography>
+					  </Box>
+					  <HeartIcon color="error" sx={{ width: '80px' }} />
+					</Box>
+					<Box sx={{ display: 'flex', flexDirection: 'column', marginTop: 2 }}>
+					  <Typography variant="body1">RR-Peaks</Typography>
+					  <Typography variant="h4">{rrPeaks}</Typography>
+					</Box>
+					<Box sx={{ display: 'flex', flexDirection: 'column', marginTop: 2 }}>
+					  <Typography variant="body1">HRV (RMSSD)</Typography>
+					  <Typography variant="h4">{hrvData.length ? hrvData[hrvData.length - 1] : 'No data'}</Typography>
+					</Box>
+				  </CardContent>
+				</Card>
+			  </Grid>
+			  <Grid item xs={12} md={6}>
+				<Card sx={{ height: '100%' }}>
+				  <CardContent>
+					<HRVSculpture hrv={hrvData.length ? hrvData[hrvData.length - 1] : null} />
+				  </CardContent>
+				</Card>
+			  </Grid>
+			  <Grid item xs={12} md={6}>
+				<Card sx={{ height: '100%' }}>
+				  <CardContent>
+					<Box display="flex" justifyContent="space-between" alignItems="center">
+					  <Typography variant="h6">Heart Rate and HRV Chart</Typography>
+					  <Box>
+						<Button onClick={() => addTag('red', 'Conflicto')} sx={{ marginRight: 1 }}>Add Red Tag</Button>
+						<Button onClick={() => addTag('blue', 'Realización')}>Add Blue Tag</Button>
+					  </Box>
+					</Box>
+					<HeartRateChart heartRateData={heartRateData} hrvData={hrvData} tags={tags} />
+				  </CardContent>
+				</Card>
+			  </Grid>
+			  <Grid item xs={12} md={6}>
+				<Card sx={{ height: '100%' }}>
+				  <CardContent sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+					<Box sx={{ flex: '1 1 auto', overflow: 'auto' }}>
+					  <Typography variant="h6">Tags</Typography>
+					  <TableContainer component={Paper} sx={{ boxShadow: 'none', maxHeight: 400 }}>
+						<Table>
+						  <TableHead>
+							<TableRow>
+							  <TableCell>Time Elapsed</TableCell>
+							  <TableCell>Heart Rate (BPM)</TableCell>
+							  <TableCell>HRV</TableCell>
+							  <TableCell>Type</TableCell>
+							  <TableCell>Comments</TableCell>
+							</TableRow>
+						  </TableHead>
+						  <TableBody>
+							{tags.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((tag, index) => (
+							  <TableRow key={index}>
+								<TableCell>{tag.time}</TableCell>
+								<TableCell>{tag.heartRate}</TableCell>
+								<TableCell>{tag.hrv}</TableCell>
+								<TableCell sx={{ color: tag.color }}>{tag.type}</TableCell>
+								<TableCell>
+								  <TextField
+									variant="outlined"
+									fullWidth
+									value={tag.comments}
+									onChange={(e) => handleCommentChange(e, index)}
+									placeholder="Add a comment"
+								  />
+								</TableCell>
+							  </TableRow>
+							))}
+						  </TableBody>
+						</Table>
+					  </TableContainer>
+					</Box>
+					<TablePagination
+					  rowsPerPageOptions={[5, 10, 25]}
+					  component="div"
+					  count={tags.length}
+					  rowsPerPage={rowsPerPage}
+					  page={page}
+					  onPageChange={handleChangePage}
+					  onRowsPerPageChange={handleChangeRowsPerPage}
+					/>
+				  </CardContent>
+				</Card>
+			  </Grid>
+			</Grid>
+		  </Box>
+		)}
+	  </Box>
+	</Box>
   );
 };
 
