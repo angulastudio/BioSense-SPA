@@ -246,170 +246,180 @@ const App = () => {
   };
 
   return (
-    <Box sx={{ width: '100%', overflowX: 'hidden' }}>
-      <AppBar position="static" sx={{ width: '100%' }}>
-        <Toolbar>
-          <IconButton edge="start" color="inherit" aria-label="menu">
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Biosense
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', marginRight: 4 }}>
-            <WbSunnyIcon sx={{ marginRight: 0.5 }} />
-            <Switch checked={darkMode} onChange={toggleDarkMode} sx={{ mx: 0.5 }} />
-            <Brightness2Icon sx={{ transform: 'rotate(180deg)', marginLeft: 0.5 }} />
-          </Box>
-          {connected && (
-            <>
-              <Typography variant="h6" sx={{ marginRight: 4 }}>
-                {formatTime(timer)}
-              </Typography>
-              <IconButton
-                color="inherit"
-                onClick={togglePause}
-                sx={{ borderRadius: '50%', backgroundColor: 'white', marginRight: 1 }}
-              >
-                {isPaused ? <PlayArrowIcon sx={{ color: 'black' }} /> : <PauseIcon sx={{ color: 'black' }} />}
-              </IconButton>
-              <IconButton
-                color="inherit"
-                onClick={stopAndDisconnect}
-                sx={{ borderRadius: '50%', backgroundColor: 'white' }}
-              >
-                <StopIcon sx={{ color: 'black' }} />
-              </IconButton>
-            </>
-          )}
-        </Toolbar>
-      </AppBar>
-      <Box sx={{ width: '100%', padding: '16px', boxSizing: 'border-box' }}>
-        {showSummary ? (
-          <SummaryView
-            heartRateData={summaryData.heartRateData}
-            hrvData={summaryData.hrvData}
-            tags={summaryData.tags}
-            onConnectNewDevice={handleConnectNewDevice}
-          />
-        ) : !connected ? (
-          <Box>
-            <Button onClick={scanDevices} disabled={isScanning}>
-              {isScanning ? 'Scanning...' : 'Scan for Devices'}
-            </Button>
-            {isScanning ? <LinearProgress /> : (
-              <ul>
-                {devices.map(device => (
-                  <ListItemButton key={device.address} onClick={() => connectToDevice(device.address)} disabled={isConnecting}>
-                    <ListItemIcon>
-                      <BluetoothIcon />
-                    </ListItemIcon>
-                    <ListItemText primary={device.name} />
-                    {connectingDevice === device.address && <CircularProgress size={24} />}
-                  </ListItemButton>
-                ))}
-              </ul>
-            )}
-          </Box>
-        ) : (
-          <Box sx={{ width: '100%' }}>
-            <Grid container spacing={2} sx={{ marginTop: 2, width: '100%', paddingX: '16px', boxSizing: 'border-box' }}>
-              <Grid item xs={12} md={6}>
-                <Card sx={{ height: '100%' }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center'}}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column'}}>
-                        <Typography variant="body1">Heart Rate (BPM)</Typography>
-                        <Typography variant="h4">{heartRate}</Typography>
-                      </Box>
-                      <HeartIcon color="error" sx={{width: '80px'}} />
-                    </Box>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', marginTop: 2 }}>
-                      <Typography variant="body1">RR-Peaks</Typography>
-                      <Typography variant="h4">{rrPeaks}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', marginTop: 2 }}>
-                      <Typography variant="body1">HRV (RMSSD)</Typography>
-                      <Typography variant="h4">{hrvData.length ? hrvData[hrvData.length - 1] : 'No data'}</Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Card sx={{ height: '100%' }}>
-                  <CardContent>
-                    <HRVSculpture hrv={hrvData.length ? hrvData[hrvData.length - 1] : null} />
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Card sx={{ height: '100%' }}>
-                  <CardContent>
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Typography variant="h6">Heart Rate and HRV Chart</Typography>
-                      <Box>
-                        <Button onClick={() => addTag('red', 'Conflicto')} sx={{ marginRight: 1 }}>Add Red Tag</Button>
-                        <Button onClick={() => addTag('blue', 'Realización')}>Add Blue Tag</Button>
-                      </Box>
-                    </Box>
-                    <HeartRateChart heartRateData={heartRateData} hrvData={hrvData} tags={tags} />
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Card sx={{ height: '100%' }}>
-                  <CardContent sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <Box sx={{ flex: '1 1 auto', overflow: 'auto' }}>
-                      <Typography variant="h6">Tags</Typography>
-                      <TableContainer component={Paper} sx={{ boxShadow: 'none', maxHeight: 400 }}>
-                        <Table>
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>Time Elapsed</TableCell>
-                              <TableCell>Heart Rate (BPM)</TableCell>
-                              <TableCell>HRV</TableCell>
-                              <TableCell>Type</TableCell>
-                              <TableCell>Comments</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {tags.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((tag, index) => (
-                              <TableRow key={index}>
-                                <TableCell>{tag.time}</TableCell>
-                                <TableCell>{tag.heartRate}</TableCell>
-                                <TableCell>{tag.hrv}</TableCell>
-                                <TableCell sx={{ color: tag.color }}>{tag.type}</TableCell>
-                                <TableCell>
-                                  <TextField
-                                    variant="outlined"
-                                    fullWidth
-                                    value={tag.comments}
-                                    onChange={(e) => handleCommentChange(e, index)}
-                                    placeholder="Add a comment"
-                                  />
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    </Box>
-                    <TablePagination
-                      rowsPerPageOptions={[5, 10, 25]}
-                      component="div"
-                      count={tags.length}
-                      rowsPerPage={rowsPerPage}
-                      page={page}
-                      onPageChange={handleChangePage}
-                      onRowsPerPageChange={handleChangeRowsPerPage}
-                    />
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-          </Box>
-        )}
-      </Box>
-    </Box>
+	<Box sx={{ width: '100%', overflowX: 'hidden' }}>
+	  <AppBar position="static" sx={{ width: '100%' }}>
+		<Toolbar>
+		  <IconButton edge="start" color="inherit" aria-label="menu">
+			<MenuIcon />
+		  </IconButton>
+		  <Typography variant="h6" sx={{ flexGrow: 1 }}>
+			Biosense
+		  </Typography>
+		  <Box sx={{ display: 'flex', alignItems: 'center', marginRight: 4 }}>
+			<WbSunnyIcon sx={{ marginRight: 0.5 }} />
+			<Switch checked={darkMode} onChange={toggleDarkMode} sx={{ mx: 0.5 }} />
+			<Brightness2Icon sx={{ transform: 'rotate(180deg)', marginLeft: 0.5 }} />
+		  </Box>
+		  {connected && (
+			<>
+			  <Typography variant="h6" sx={{ marginRight: 4 }}>
+				{formatTime(timer)}
+			  </Typography>
+			  <IconButton
+				color="inherit"
+				onClick={togglePause}
+				sx={{ borderRadius: '50%', backgroundColor: 'white', marginRight: 1 }}
+			  >
+				{isPaused ? <PlayArrowIcon sx={{ color: 'black' }} /> : <PauseIcon sx={{ color: 'black' }} />}
+			  </IconButton>
+			  <IconButton
+				color="inherit"
+				onClick={stopAndDisconnect}
+				sx={{ borderRadius: '50%', backgroundColor: 'white' }}
+			  >
+				<StopIcon sx={{ color: 'black' }} />
+			  </IconButton>
+			</>
+		  )}
+		</Toolbar>
+	  </AppBar>
+	  <Box sx={{ width: '100%', padding: '16px', boxSizing: 'border-box' }}>
+		{showSummary ? (
+		  <SummaryView
+			heartRateData={summaryData.heartRateData}
+			hrvData={summaryData.hrvData}
+			tags={summaryData.tags}
+			onConnectNewDevice={handleConnectNewDevice}
+		  />
+		) : !connected ? (
+		  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+			<Card sx={{ width: '80%', maxWidth: '600px' }}>
+			  <CardContent>
+				<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+				  <Button onClick={scanDevices} disabled={isScanning} fullWidth variant="contained" color="primary">
+					{isScanning ? 'Scanning...' : 'Scan for Devices'}
+				  </Button>
+				  {isScanning ? (
+					<LinearProgress sx={{ marginTop: 2, width: '100%' }} />
+				  ) : (
+					<Box sx={{ width: '100%' }}>
+					  <ul style={{ paddingLeft: '0px', width: '100%' }}>
+						{devices.map(device => (
+						  <ListItemButton key={device.address} onClick={() => connectToDevice(device.address)} disabled={isConnecting} sx={{ width: '100%' }}>
+							<ListItemIcon>
+							  <BluetoothIcon />
+							</ListItemIcon>
+							<ListItemText primary={device.name} />
+							{connectingDevice === device.address && <CircularProgress size={24} />}
+						  </ListItemButton>
+						))}
+					  </ul>
+					</Box>
+				  )}
+				</Box>
+			  </CardContent>
+			</Card>
+		  </Box>
+		) : (
+		  <Box sx={{ width: '100%' }}>
+			<Grid container spacing={2} sx={{ marginTop: 2, width: '100%', paddingX: '16px', boxSizing: 'border-box' }}>
+			  <Grid item xs={12} md={6}>
+				<Card sx={{ height: '100%' }}>
+				  <CardContent>
+					<Box sx={{ display: 'flex', alignItems: 'center' }}>
+					  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+						<Typography variant="body1">Heart Rate (BPM)</Typography>
+						<Typography variant="h4">{heartRate}</Typography>
+					  </Box>
+					  <HeartIcon color="error" sx={{ width: '80px' }} />
+					</Box>
+					<Box sx={{ display: 'flex', flexDirection: 'column', marginTop: 2 }}>
+					  <Typography variant="body1">RR-Peaks</Typography>
+					  <Typography variant="h4">{rrPeaks}</Typography>
+					</Box>
+					<Box sx={{ display: 'flex', flexDirection: 'column', marginTop: 2 }}>
+					  <Typography variant="body1">HRV (RMSSD)</Typography>
+					  <Typography variant="h4">{hrvData.length ? hrvData[hrvData.length - 1] : 'No data'}</Typography>
+					</Box>
+				  </CardContent>
+				</Card>
+			  </Grid>
+			  <Grid item xs={12} md={6}>
+				<Card sx={{ height: '100%' }}>
+				  <CardContent>
+					<HRVSculpture hrv={hrvData.length ? hrvData[hrvData.length - 1] : null} />
+				  </CardContent>
+				</Card>
+			  </Grid>
+			  <Grid item xs={12} md={6}>
+				<Card sx={{ height: '100%' }}>
+				  <CardContent>
+					<Box display="flex" justifyContent="space-between" alignItems="center">
+					  <Typography variant="h6">Heart Rate and HRV Chart</Typography>
+					  <Box>
+						<Button onClick={() => addTag('red', 'Conflicto')} sx={{ marginRight: 1 }}>Add Red Tag</Button>
+						<Button onClick={() => addTag('blue', 'Realización')}>Add Blue Tag</Button>
+					  </Box>
+					</Box>
+					<HeartRateChart heartRateData={heartRateData} hrvData={hrvData} tags={tags} />
+				  </CardContent>
+				</Card>
+			  </Grid>
+			  <Grid item xs={12} md={6}>
+				<Card sx={{ height: '100%' }}>
+				  <CardContent sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+					<Box sx={{ flex: '1 1 auto', overflow: 'auto' }}>
+					  <Typography variant="h6">Tags</Typography>
+					  <TableContainer component={Paper} sx={{ boxShadow: 'none', maxHeight: 400 }}>
+						<Table>
+						  <TableHead>
+							<TableRow>
+							  <TableCell>Time Elapsed</TableCell>
+							  <TableCell>Heart Rate (BPM)</TableCell>
+							  <TableCell>HRV</TableCell>
+							  <TableCell>Type</TableCell>
+							  <TableCell>Comments</TableCell>
+							</TableRow>
+						  </TableHead>
+						  <TableBody>
+							{tags.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((tag, index) => (
+							  <TableRow key={index}>
+								<TableCell>{tag.time}</TableCell>
+								<TableCell>{tag.heartRate}</TableCell>
+								<TableCell>{tag.hrv}</TableCell>
+								<TableCell sx={{ color: tag.color }}>{tag.type}</TableCell>
+								<TableCell>
+								  <TextField
+									variant="outlined"
+									fullWidth
+									value={tag.comments}
+									onChange={(e) => handleCommentChange(e, index)}
+									placeholder="Add a comment"
+								  />
+								</TableCell>
+							  </TableRow>
+							))}
+						  </TableBody>
+						</Table>
+					  </TableContainer>
+					</Box>
+					<TablePagination
+					  rowsPerPageOptions={[5, 10, 25]}
+					  component="div"
+					  count={tags.length}
+					  rowsPerPage={rowsPerPage}
+					  page={page}
+					  onPageChange={handleChangePage}
+					  onRowsPerPageChange={handleChangeRowsPerPage}
+					/>
+				  </CardContent>
+				</Card>
+			  </Grid>
+			</Grid>
+		  </Box>
+		)}
+	  </Box>
+	</Box>
   );
 };
 
