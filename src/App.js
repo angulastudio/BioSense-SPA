@@ -61,16 +61,30 @@ const App = () => {
   };
 
 
+//   const scanDevices = async () => {
+//     setIsScanning(true);
+//     try {
+//       const response = await api.get('/scan');
+//       setDevices(response.data);
+//       setIsScanning(false);
+//     } catch (error) {
+//       console.error('Error scanning devices:', error);
+//       setIsScanning(false);
+//     }
+//   };
+
   const scanDevices = async () => {
-    setIsScanning(true);
-    try {
-      const response = await api.get('/scan');
-      setDevices(response.data);
-      setIsScanning(false);
-    } catch (error) {
-      console.error('Error scanning devices:', error);
-      setIsScanning(false);
-    }
+	console.log('Starting scan...');
+	setIsScanning(true);
+	try {
+	  const response = await api.get('/scan');
+	  console.log('Scan response:', response.data);
+	  setDevices(response.data);
+	  setIsScanning(false);
+	} catch (error) {
+	  console.error('Error scanning devices:', error);
+	  setIsScanning(false);
+	}
   };
   
   const connectToDevice = async (address) => {
