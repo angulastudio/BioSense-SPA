@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import api from './api';
 
 import { AppBar, Toolbar, IconButton, Button, Typography, Box, LinearProgress, CircularProgress, ListItemButton, ListItemText, ListItemIcon, Grid, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Switch, TablePagination } from '@mui/material';
 import BluetoothIcon from '@mui/icons-material/Bluetooth';
@@ -63,7 +64,7 @@ const App = () => {
   const scanDevices = async () => {
     setIsScanning(true);
     try {
-      const response = await axios.get('/scan');
+      const response = await api.get('/scan');
       setDevices(response.data);
       setIsScanning(false);
     } catch (error) {
