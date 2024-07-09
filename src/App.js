@@ -265,7 +265,7 @@ const App = () => {
 	  <AppBar position="static" sx={{ width: '100%' }}>
 		<Toolbar>
 		  <IconButton edge="start" color="inherit" aria-label="menu">
-			<MenuIcon />
+			{/* <MenuIcon /> */}
 		  </IconButton>
 		  <Typography variant="h6" sx={{ flexGrow: 1 }}>
 			Biosense
@@ -386,8 +386,8 @@ const App = () => {
 					<Box display="flex" justifyContent="space-between" alignItems="center">
 					  <Typography variant="h6">Heart Rate and HRV Chart</Typography>
 					  <Box>
-						<Button onClick={() => addTag('red', 'Conflicto')} sx={{ marginRight: 1 }}>Add Red Tag</Button>
-						<Button onClick={() => addTag('blue', 'Realización')}>Add Blue Tag</Button>
+						<Button onClick={() => addTag('orange', 'Tag A')} sx={{ marginRight: 1 }}>Add Orange Tag</Button>
+						<Button onClick={() => addTag('#8267EF', 'Tag B')}>Add Purple Tag</Button>
 					  </Box>
 					</Box>
 					<HeartRateChart heartRateData={heartRateData} hrvData={hrvData} tags={tags} />
