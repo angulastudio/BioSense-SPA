@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 
-import { AppBar, Toolbar, IconButton, Button, Typography, Box, LinearProgress, CircularProgress, ListItemButton, ListItemText, ListItemIcon, Grid, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Switch } from '@mui/material';
+import { AppBar, Toolbar, IconButton, Button, Typography, Box, LinearProgress, CircularProgress, ListItemButton, ListItemText, ListItemIcon, Grid, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Switch, TablePagination } from '@mui/material';
 import BluetoothIcon from '@mui/icons-material/Bluetooth';
 import MenuIcon from '@mui/icons-material/Menu';
 import HeartIcon from '@mui/icons-material/Favorite';
@@ -39,6 +39,9 @@ const App = () => {
 
   const [tags, setTags] = useState([]);
 
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+
   const [showSummary, setShowSummary] = useState(false);
 
   const [summaryData, setSummaryData] = useState({
@@ -46,6 +49,15 @@ const App = () => {
 	hrvData: [],
 	tags: [],
   });
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
 
   const scanDevices = async () => {
@@ -243,13 +255,13 @@ const App = () => {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Biosense
           </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', marginRight: 4 }}>
+            <WbSunnyIcon sx={{ marginRight: 0.5 }} />
+            <Switch checked={darkMode} onChange={toggleDarkMode} sx={{ mx: 0.5 }} />
+            <Brightness2Icon sx={{ transform: 'rotate(180deg)', marginLeft: 0.5 }} />
+          </Box>
           {connected && (
             <>
-              <Box sx={{ display: 'flex', alignItems: 'center', marginRight: 4 }}>
-                <WbSunnyIcon sx={{ marginRight: -0.5 }} />
-                <Switch checked={darkMode} onChange={toggleDarkMode} sx={{ mx: 0.5 }} />
-                <Brightness2Icon sx={{ transform: 'rotate(180deg)', marginLeft: -0.5 }} />
-              </Box>
               <Typography variant="h6" sx={{ marginRight: 4 }}>
                 {formatTime(timer)}
               </Typography>
@@ -302,19 +314,20 @@ const App = () => {
           <Box sx={{ width: '100%' }}>
             <Grid container spacing={2} sx={{ marginTop: 2, width: '100%', paddingX: '16px', boxSizing: 'border-box' }}>
               <Grid item xs={12} md={6}>
-                <Card>
+                <Card sx={{ height: '100%' }}>
                   <CardContent>
-                    <Typography variant="h6">Device: {selectedDevice?.name}</Typography>
-                    <Box display="flex" alignItems="center" justifyContent="space-between">
-                      <Typography variant="body1">Heart Rate (BPM)</Typography>
-                      <Typography variant="h4">{heartRate}</Typography>
-                      <HeartIcon color="error" />
+                    <Box sx={{ display: 'flex', alignItems: 'center'}}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column'}}>
+                        <Typography variant="body1">Heart Rate (BPM)</Typography>
+                        <Typography variant="h4">{heartRate}</Typography>
+                      </Box>
+                      <HeartIcon color="error" sx={{width: '80px'}} />
                     </Box>
-                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Box sx={{ display: 'flex', flexDirection: 'column', marginTop: 2 }}>
                       <Typography variant="body1">RR-Peaks</Typography>
                       <Typography variant="h4">{rrPeaks}</Typography>
                     </Box>
-                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Box sx={{ display: 'flex', flexDirection: 'column', marginTop: 2 }}>
                       <Typography variant="body1">HRV (RMSSD)</Typography>
                       <Typography variant="h4">{hrvData.length ? hrvData[hrvData.length - 1] : 'No data'}</Typography>
                     </Box>
@@ -322,66 +335,75 @@ const App = () => {
                 </Card>
               </Grid>
               <Grid item xs={12} md={6}>
-                <Card>
+                <Card sx={{ height: '100%' }}>
                   <CardContent>
                     <HRVSculpture hrv={hrvData.length ? hrvData[hrvData.length - 1] : null} />
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={6}>
-			  	<Card>
-			  	  <CardContent>
-					<Box display="flex" justifyContent="space-between" alignItems="center">
-					<Typography variant="h6">Heart Rate and HRV Chart</Typography>
-					<Box>
-						<Button onClick={() => addTag('red', 'Conflicto')} sx={{ marginRight: 1 }}>Add Red Tag</Button>
-						<Button onClick={() => addTag('blue', 'Realización')}>Add Blue Tag</Button>
-					</Box>
-					</Box>
-                	<HeartRateChart heartRateData={heartRateData} hrvData={hrvData} tags={tags} />
-				  </CardContent>
+                <Card sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Typography variant="h6">Heart Rate and HRV Chart</Typography>
+                      <Box>
+                        <Button onClick={() => addTag('red', 'Conflicto')} sx={{ marginRight: 1 }}>Add Red Tag</Button>
+                        <Button onClick={() => addTag('blue', 'Realización')}>Add Blue Tag</Button>
+                      </Box>
+                    </Box>
+                    <HeartRateChart heartRateData={heartRateData} hrvData={hrvData} tags={tags} />
+                  </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={6}>
-			   <Card>
-			    <CardContent>
-					<Box>
-					<Typography variant="h6">Tags</Typography>
-					<TableContainer component={Paper} sx={{ boxShadow: 'none' }}>
-						<Table>
-						<TableHead>
-							<TableRow>
-							<TableCell>Time Elapsed</TableCell>
-							<TableCell>Heart Rate (BPM)</TableCell>
-							<TableCell>HRV</TableCell>
-							<TableCell>Type</TableCell>
-							<TableCell>Comments</TableCell>
-							</TableRow>
-						</TableHead>
-						<TableBody>
-							{tags.map((tag, index) => (
-							<TableRow key={index}>
-								<TableCell>{tag.time}</TableCell>
-								<TableCell>{tag.heartRate}</TableCell>
-								<TableCell>{tag.hrv}</TableCell>
-								<TableCell sx={{ color: tag.color }}>{tag.type}</TableCell>
-								<TableCell>
-								<TextField
-									variant="outlined"
-									fullWidth
-									value={tag.comments}
-									onChange={(e) => handleCommentChange(e, index)}
-									placeholder="Add a comment"
-								/>
-								</TableCell>
-							</TableRow>
-							))}
-						</TableBody>
-						</Table>
-					</TableContainer>
-					</Box>
-				 </CardContent>
-				</Card>
+                <Card sx={{ height: '100%' }}>
+                  <CardContent sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <Box sx={{ flex: '1 1 auto', overflow: 'auto' }}>
+                      <Typography variant="h6">Tags</Typography>
+                      <TableContainer component={Paper} sx={{ boxShadow: 'none', maxHeight: 400 }}>
+                        <Table>
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Time Elapsed</TableCell>
+                              <TableCell>Heart Rate (BPM)</TableCell>
+                              <TableCell>HRV</TableCell>
+                              <TableCell>Type</TableCell>
+                              <TableCell>Comments</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {tags.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((tag, index) => (
+                              <TableRow key={index}>
+                                <TableCell>{tag.time}</TableCell>
+                                <TableCell>{tag.heartRate}</TableCell>
+                                <TableCell>{tag.hrv}</TableCell>
+                                <TableCell sx={{ color: tag.color }}>{tag.type}</TableCell>
+                                <TableCell>
+                                  <TextField
+                                    variant="outlined"
+                                    fullWidth
+                                    value={tag.comments}
+                                    onChange={(e) => handleCommentChange(e, index)}
+                                    placeholder="Add a comment"
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Box>
+                    <TablePagination
+                      rowsPerPageOptions={[5, 10, 25]}
+                      component="div"
+                      count={tags.length}
+                      rowsPerPage={rowsPerPage}
+                      page={page}
+                      onPageChange={handleChangePage}
+                      onRowsPerPageChange={handleChangeRowsPerPage}
+                    />
+                  </CardContent>
+                </Card>
               </Grid>
             </Grid>
           </Box>
