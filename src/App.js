@@ -77,12 +77,12 @@ const App = () => {
 	setConnectingDevice(address);
 	setIsConnecting(true);
 	try {
-	  await axios.post('/set_address', { address });
-	  const connectResponse = await axios.get('/connect');
+	  await api.post('/set_address', { address });
+	  const connectResponse = await api.get('/connect');
 	  if (connectResponse.status === 200) {
 		setConnected(true);
 		setSelectedDevice(devices.find(device => device.address === address));
-		await axios.get('/start_notifications');
+		await api.get('/start_notifications');
 	  }
 	  setIsConnecting(false);
 	  setConnectingDevice(null);
@@ -125,21 +125,21 @@ const App = () => {
 
 
   const fetchHeartRate = async () => {
-    const response = await axios.get('/heart_rate');
+    const response = await api.get('/heart_rate');
     setHeartRate(response.data.heart_rate);
     setHeartRateData(prevData => [...prevData, response.data.heart_rate]);
     // setHeartRateData(prevData => [...prevData.slice(-50), response.data.heart_rate]);
   };
 
   const fetchRrPeaks = async () => {
-    const response = await axios.get('/rr_peaks');
+    const response = await api.get('/rr_peaks');
     setRrPeaks(response.data.rr_peaks);
   };
 
 
   const fetchHrv = async () => {
     try {
-      const response = await axios.get('/hrv');
+      const response = await api.get('/hrv');
       if (response.data.hrv !== undefined) {
         setHrvData(prevData => [...prevData, response.data.hrv]);
       }
@@ -150,7 +150,7 @@ const App = () => {
 
   const stopNotifications = async () => {
     try {
-      const response = await axios.get('/stop_notifications');
+      const response = await api.get('/stop_notifications');
       if (response.status === 200) {
         console.log(response.data.message);
         setConnected(false);
@@ -197,14 +197,14 @@ const App = () => {
     setIsPaused(!isPaused);
     if (!isPaused) {
       try {
-        const response = await axios.get('/stop_notifications');
+        const response = await api.get('/stop_notifications');
         console.log("Notifications paused.");
       } catch (error) {
         console.error('Error pausing notifications:', error);
       }
     } else {
       try {
-        const response = await axios.get('/start_notifications');
+        const response = await api.get('/start_notifications');
         console.log("Notifications resumed.");
       } catch (error) {
         console.error('Error resuming notifications:', error);
@@ -215,9 +215,9 @@ const App = () => {
   const stopAndDisconnect = async () => {
 	try {
 	  if (!isPaused) {
-		await axios.get('/stop_notifications');
+		await api.get('/stop_notifications');
 	  }
-	  const response = await axios.get('/disconnect');
+	  const response = await api.get('/disconnect');
 	  if (response.status === 200) {
 		console.log("Disconnected from device.");
   
