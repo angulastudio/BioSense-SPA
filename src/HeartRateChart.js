@@ -46,6 +46,10 @@ const HeartRateChart = ({ heartRateData, hrvData, tags }) => {
         type: 'linear',
         display: true,
         position: 'left',
+        title: {
+          display: true,
+          text: 'Heart Rate'
+        }
       },
       y1: {
         type: 'linear',
@@ -54,6 +58,10 @@ const HeartRateChart = ({ heartRateData, hrvData, tags }) => {
         grid: {
           drawOnChartArea: false,
         },
+        title: {
+          display: true,
+          text: 'HRV'
+        }
       }
     },
     plugins: {
@@ -71,7 +79,15 @@ const HeartRateChart = ({ heartRateData, hrvData, tags }) => {
             position: 'start'
           }
         }))
-      }
+      },
+      legend: {
+        onClick: (e, legendItem, legend) => {
+          const index = legendItem.datasetIndex;
+          const chart = legend.chart;
+          chart.getDatasetMeta(index).hidden = !chart.getDatasetMeta(index).hidden;
+          chart.update();
+        }
+      },
     },
   };
 
