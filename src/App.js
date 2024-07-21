@@ -11,6 +11,8 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import Brightness2Icon from '@mui/icons-material/Brightness2';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 import HRVSculpture from './HRVSculpture';
 import HeartRateChart from './HeartRateChart';
@@ -40,6 +42,8 @@ const App = () => {
 
   const [tags, setTags] = useState([]);
 
+  const [chartVisible, setChartVisible] = useState(true);
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
@@ -55,23 +59,14 @@ const App = () => {
     setPage(newPage);
   };
 
+  const toggleChartVisibility = () => {
+    setChartVisible(!chartVisible);
+  };
+
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
-
-
-//   const scanDevices = async () => {
-//     setIsScanning(true);
-//     try {
-//       const response = await api.get('/scan');
-//       setDevices(response.data);
-//       setIsScanning(false);
-//     } catch (error) {
-//       console.error('Error scanning devices:', error);
-//       setIsScanning(false);
-//     }
-//   };
 
   const scanDevices = async () => {
 	console.log('Starting scan...');
@@ -384,13 +379,20 @@ const App = () => {
 				<Card sx={{ height: '100%' }}>
 				  <CardContent>
 					<Box display="flex" justifyContent="space-between" alignItems="center">
-					  <Typography variant="h6">Heart Rate and HRV Chart</Typography>
-					  <Box>
-						<Button onClick={() => addTag('orange', 'Tag A')} sx={{ marginRight: 1 }}>Add Orange Tag</Button>
-						<Button onClick={() => addTag('#8267EF', 'Tag B')}>Add Purple Tag</Button>
-					  </Box>
+						<Typography variant="h6">Heart Rate and HRV Chart</Typography>
+					  	<IconButton onClick={toggleChartVisibility}>
+							{chartVisible ? <VisibilityOff /> : <Visibility />}
+					  	</IconButton>
+						<Box>
+							<Button onClick={() => addTag('orange', 'Tag A')} sx={{ marginRight: 1 }}>Add Orange Tag</Button>
+							<Button onClick={() => addTag('#8267EF', 'Tag B')}>Add Purple Tag</Button>
+						</Box>
 					</Box>
-					<HeartRateChart heartRateData={heartRateData} hrvData={hrvData} tags={tags} />
+					{chartVisible ? (
+						<HeartRateChart heartRateData={heartRateData} hrvData={hrvData} tags={tags} />
+					) : (
+						<Typography variant="subtitle1" sx={{ textAlign: 'center', marginTop: 2 }}>Chart Hidden</Typography>
+            		)}
 				  </CardContent>
 				</Card>
 			  </Grid>
