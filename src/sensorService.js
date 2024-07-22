@@ -13,7 +13,7 @@ const cleanRrIntervals = (rrIntervals) => {
 		return rrIntervals;
 	}
 	rrIntervals = rrIntervals.filter((val, i, arr) => {
-		return i === 0 || val > arr[i - 1] * 0.8 && val < arr[i - 1] * 1.2;
+		return i === 0 || (val > arr[i - 1] * 0.8 && val < arr[i - 1] * 1.2);
 	});
 	return rrIntervals;
 };
@@ -41,7 +41,7 @@ const calculateRmssd = (rrIntervals) => {
 const scaleHrvTo100 = (lnRmssd) => {
 	const minLnRmssd = 0;
 	const maxLnRmssd = 6.5;
-	return Math.min(100, Math.max(0, (lnRmssd - minLnRmssd) / (maxLnRmssd - minLnRmssd) * 100));
+	return Math.min(100, Math.max(0, ((lnRmssd - minLnRmssd) / (maxLnRmssd - minLnRmssd)) * 100));
 };
 
 /**

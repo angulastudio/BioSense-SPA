@@ -6,15 +6,26 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 
 Chart.register(...registerables, annotationPlugin);
 
+const HeartRateChart = ({ heartRateData, hrvData, tags, maxMinData, isSummary = false }) => {
+  const MAX_TIME_WINDOW = 15; // 15 seconds
+  const dataLength = heartRateData.length;
 
-const HeartRateChart = ({ heartRateData, hrvData, tags, maxMinData }) => {
+  let filteredHeartRateData = heartRateData;
+  let filteredHrvData = hrvData;
+  let filteredTags = tags;
+
+  if (!isSummary && dataLength > MAX_TIME_WINDOW) {
+    filteredHeartRateData = heartRateData.slice(dataLength - MAX_TIME_WINDOW);
+    filteredHrvData = hrvData.slice(dataLength - MAX_TIME_WINDOW);
+    filteredTags = tags.filter(tag => tag.index >= dataLength - MAX_TIME_WINDOW);
+  }
 
   const chartData = {
-    labels: heartRateData.map((_, index) => index),
+    labels: filteredHeartRateData.map((_, index) => dataLength > MAX_TIME_WINDOW && !isSummary ? dataLength - MAX_TIME_WINDOW + index + 1 : index + 1),
     datasets: [
       {
         label: 'Heart Rate (BPM)',
-        data: heartRateData,
+        data: filteredHeartRateData,
         fill: false,
         backgroundColor: 'rgb(255, 99, 132)',
         borderColor: 'rgba(255, 99, 132, 0.5)',
@@ -24,7 +35,7 @@ const HeartRateChart = ({ heartRateData, hrvData, tags, maxMinData }) => {
       },
       {
         label: 'HRV (RMSSD)',
-        data: hrvData,
+        data: filteredHrvData,
         fill: false,
         backgroundColor: 'rgb(54, 162, 235)',
         borderColor: 'rgba(54, 162, 235, 0.5)',
@@ -35,15 +46,15 @@ const HeartRateChart = ({ heartRateData, hrvData, tags, maxMinData }) => {
     ],
   };
 
-  const annotations = tags.map(tag => ({
+  const annotations = filteredTags.map(tag => ({
     type: 'line',
-    xMin: tag.index,
-    xMax: tag.index,
+    xMin: dataLength > MAX_TIME_WINDOW && !isSummary ? tag.index - (dataLength - MAX_TIME_WINDOW) + 1 : tag.index + 1,
+    xMax: dataLength > MAX_TIME_WINDOW && !isSummary ? tag.index - (dataLength - MAX_TIME_WINDOW) + 1 : tag.index + 1,
     borderColor: tag.color,
     borderWidth: 2,
     label: {
       enabled: true,
-      content: 'Tag',
+      content: tag.type,
       position: 'start'
     }
   }));
@@ -53,7 +64,7 @@ const HeartRateChart = ({ heartRateData, hrvData, tags, maxMinData }) => {
     annotations.push(
       {
         type: 'point',
-        xValue: maxHRIndex,
+        xValue: dataLength > MAX_TIME_WINDOW && !isSummary ? maxHRIndex - (dataLength - MAX_TIME_WINDOW) + 1 : maxHRIndex + 1,
         yValue: maxHR,
         backgroundColor: 'red',
         radius: 5,
@@ -66,7 +77,7 @@ const HeartRateChart = ({ heartRateData, hrvData, tags, maxMinData }) => {
       },
       {
         type: 'point',
-        xValue: minHRIndex,
+        xValue: dataLength > MAX_TIME_WINDOW && !isSummary ? minHRIndex - (dataLength - MAX_TIME_WINDOW) + 1 : minHRIndex + 1,
         yValue: minHR,
         backgroundColor: 'red',
         radius: 5,
@@ -79,7 +90,7 @@ const HeartRateChart = ({ heartRateData, hrvData, tags, maxMinData }) => {
       },
       {
         type: 'point',
-        xValue: maxHRVIndex,
+        xValue: dataLength > MAX_TIME_WINDOW && !isSummary ? maxHRVIndex - (dataLength - MAX_TIME_WINDOW) + 1 : maxHRVIndex + 1,
         yValue: maxHRV,
         backgroundColor: 'blue',
         radius: 5,
@@ -92,7 +103,7 @@ const HeartRateChart = ({ heartRateData, hrvData, tags, maxMinData }) => {
       },
       {
         type: 'point',
-        xValue: minHRVIndex,
+        xValue: dataLength > MAX_TIME_WINDOW && !isSummary ? minHRVIndex - (dataLength - MAX_TIME_WINDOW) + 1 : minHRVIndex + 1,
         yValue: minHRV,
         backgroundColor: 'blue',
         radius: 5,
@@ -104,37 +115,36 @@ const HeartRateChart = ({ heartRateData, hrvData, tags, maxMinData }) => {
         yScaleID: 'y1'
       },
       {
-        type: 'line',          
-          yMin: averageHR,
-          yMax: averageHR,
-          borderWidth: 3,
-          borderColor: 'orange',
-          label: {
-            display: true,
-            content: `Avg HR: ${averageHR}`,
-            position: 'left',
-            backgroundColor: 'orange', 
-            padding: 10
-          }
+        type: 'line',
+        yMin: averageHR,
+        yMax: averageHR,
+        borderWidth: 3,
+        borderColor: 'orange',
+        label: {
+          display: true,
+          content: `Avg HR: ${averageHR}`,
+          position: 'left',
+          backgroundColor: 'orange',
+          padding: 10
+        }
       },
       {
-        type: 'line',          
-          yMin: averageHRV,
-          yMax: averageHRV,
-          yScaleID: 'y1',
-          borderWidth: 3,
-          borderColor: '#8267EF',
-          label: {
-            display: true,
-            content: `Avg HRV: ${averageHRV}`,
-            position: 'left',
-            backgroundColor: '#8267EF', 
-            padding: 10
-          }
+        type: 'line',
+        yMin: averageHRV,
+        yMax: averageHRV,
+        yScaleID: 'y1',
+        borderWidth: 3,
+        borderColor: '#8267EF',
+        label: {
+          display: true,
+          content: `Avg HRV: ${averageHRV}`,
+          position: 'left',
+          backgroundColor: '#8267EF',
+          padding: 10
+        }
       }
     );
   }
-  
 
   const options = {
     animation: {
@@ -145,13 +155,16 @@ const HeartRateChart = ({ heartRateData, hrvData, tags, maxMinData }) => {
     },
     responsiveAnimationDuration: 0,
     scales: {
+      x: {
+        title: {
+          display: true,
+          text: 'Time (s)'
+        }
+      },
       y: {
         type: 'linear',
         display: true,
         position: 'left',
-        // grid: {
-        //   drawOnChartArea: false,
-        // },
         title: {
           display: true,
           text: 'Heart Rate'

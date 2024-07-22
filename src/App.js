@@ -5,7 +5,6 @@ import {
     TableHead, TableRow, Paper, TextField, Switch, TablePagination
 } from '@mui/material';
 
-import BluetoothIcon from '@mui/icons-material/Bluetooth';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
@@ -19,12 +18,11 @@ import HRVSculpture from './HRVSculpture';
 import HeartRateChart from './HeartRateChart';
 import SummaryView from './SummaryView';
 import { ThemeContext } from './ThemeContext';
-import { connectToDevice, togglePause, stopAndDisconnect, handleCharacteristicValueChanged, calculateHrv } from './sensorService';
+import { connectToDevice, togglePause, stopAndDisconnect, handleCharacteristicValueChanged } from './sensorService';
 
 const App = () => {
     const { darkMode, toggleDarkMode } = useContext(ThemeContext);
 
-    const [isScanning, setIsScanning] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
     const [connected, setConnected] = useState(false);
     const [heartRate, setHeartRate] = useState(null);
@@ -90,24 +88,24 @@ const App = () => {
     };
 
     const handleStopAndDisconnect = async () => {
-        try {
-            await stopAndDisconnect((event) => handleCharacteristicValueChanged(event, setHeartRate, setRrPeaks, setHeartRateData, setHrvData));
-            setConnected(false);
-            setIsPaused(false);
-            setTimer(0);
-            setSummaryData({
-                heartRateData,
-                hrvData,
-                tags,
-            });
-            setHeartRateData([]);
-            setHrvData([]);
-            setTags([]);
-            setShowSummary(true);
-        } catch (error) {
-            console.error('Error stopping and disconnecting:', error);
-        }
-    };
+		try {
+		  await stopAndDisconnect((event) => handleCharacteristicValueChanged(event, setHeartRate, setRrPeaks, setHeartRateData, setHrvData, setTags));
+		  setConnected(false);
+		  setIsPaused(false);
+		  setTimer(0);
+		  setSummaryData({
+			heartRateData: heartRateData,
+			hrvData: hrvData,
+			tags: tags,
+		  });
+		  setHeartRateData([]);
+		  setHrvData([]);
+		  setTags([]);
+		  setShowSummary(true);
+		} catch (error) {
+		  console.error('Error stopping and disconnecting:', error);
+		}
+	  };
 
     const addTag = (color, type) => {
         const newTag = {
@@ -248,7 +246,13 @@ const App = () => {
                                         </Box>
                                         {chartVisible ? (
                                             (heartRateData.length > 0 && hrvData.length > 0) ? (
-                                                <HeartRateChart heartRateData={heartRateData} hrvData={hrvData} tags={tags} />
+                                                // <HeartRateChart heartRateData={heartRateData} hrvData={hrvData} tags={tags} />
+												<HeartRateChart 
+													heartRateData={heartRateData} 
+													hrvData={hrvData} 
+													tags={tags} 
+													isSummary={false} 
+												/>
                                             ) : (
                                                 <Typography variant="subtitle1" sx={{ textAlign: 'center', marginTop: 2 }}>
                                                     Waiting for both Heart Rate and HRV data...
