@@ -16,6 +16,8 @@ import HeartIcon from '@mui/icons-material/Favorite';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Tooltip from '@mui/material/Tooltip';
 
+import Alert from '@mui/material/Alert';
+
 import HRVSculpture from './HRVSculpture';
 import HeartRateChart from './HeartRateChart';
 import SummaryView from './SummaryView';
@@ -23,6 +25,8 @@ import { ThemeContext } from './ThemeContext';
 import { connectToDevice, togglePause, stopAndDisconnect, handleCharacteristicValueChanged } from './sensorService';
 
 const App = () => {
+	const [setBluetoothAvailable] = useState(true);
+
     const { darkMode, toggleDarkMode } = useContext(ThemeContext);
 
     const [isConnecting, setIsConnecting] = useState(false);
@@ -76,6 +80,9 @@ const App = () => {
             setConnected(true);
         } catch (error) {
             console.error('Error connecting to device:', error);
+			if (error.message.includes('navigator.bluetooth is not a function')) {
+				setBluetoothAvailable(false);
+			}
         }
         setIsConnecting(false);
     };
@@ -189,6 +196,18 @@ const App = () => {
 						tags={summaryData.tags}
 						onConnectNewDevice={handleConnectNewDevice}
 					/>
+				) : !navigator.bluetooth ? (
+					<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+						<Card sx={{ width: '80%', maxWidth: '600px' }}>
+							<CardContent>
+								<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+									<Alert severity="error">
+										Bluetooth API is not available in your browser. Please use a compatible browser.
+									</Alert>
+								</Box>
+							</CardContent>
+						</Card>
+					</Box>
 				) : !connected ? (
 					<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
 						<Card sx={{ width: '80%', maxWidth: '600px' }}>
@@ -314,27 +333,27 @@ const App = () => {
 															</TableRow>
 														))}
 													</TableBody>
-												</Table>
-											</TableContainer>
-										</Box>
-										<TablePagination
-											rowsPerPageOptions={[5, 10, 25]}
-											component="div"
-											count={tags.length}
-											rowsPerPage={rowsPerPage}
-											page={page}
-											onPageChange={handleChangePage}
-											onRowsPerPageChange={handleChangeRowsPerPage}
-										/>
-									</CardContent>
-								</Card>
-							</Grid>
-						</Grid>
-					</Box>
-				)}
-			</Box>
-		</Box>
-	);
+													</Table>
+                                        </TableContainer>
+                                    </Box>
+                                    <TablePagination
+                                        rowsPerPageOptions={[5, 10, 25]}
+                                        component="div"
+                                        count={tags.length}
+                                        rowsPerPage={rowsPerPage}
+                                        page={page}
+                                        onPageChange={handleChangePage}
+                                        onRowsPerPageChange={handleChangeRowsPerPage}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    </Grid>
+                </Box>
+            )}
+        </Box>
+    </Box>
+);
 };
 
 export default App;
