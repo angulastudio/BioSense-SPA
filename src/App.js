@@ -24,8 +24,10 @@ import { connectToDevice, togglePause, stopAndDisconnect, handleCharacteristicVa
 import { database } from './firebaseConfig';
 import { ref, set, onValue, update } from 'firebase/database';
 
+
 const App = () => {
     const { darkMode, toggleDarkMode } = useContext(ThemeContext);
+	const [isDeviceConnector, setIsDeviceConnector] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
     const [connected, setConnected] = useState(false);
 	const [deviceName, setDeviceName] = useState(null);
@@ -45,27 +47,72 @@ const App = () => {
         hrvData: [],
         tags: [],
     });
+	const [joinedUserSummary, setJoinedUserSummary] = useState(false);
     const [sessionCode, setSessionCode] = useState('');
     const [openModal, setOpenModal] = useState(false);
 
-    useEffect(() => {
-        let interval = null;
-        if (connected && !isPaused) {
-            interval = setInterval(() => {
-                setTimer((prevTimer) => {
-                    const newTimer = prevTimer + 1;
-                    if (sessionCode) {
-                        const sessionRef = ref(database, `sessions/${sessionCode}`);
-                        update(sessionRef, { timer: newTimer });
-                    }
-                    return newTimer;
-                });
-            }, 1000);
-        } else {
-            clearInterval(interval);
-        }
-        return () => clearInterval(interval);
-    }, [connected, isPaused, sessionCode]);
+    // useEffect(() => {
+    //     let interval = null;
+    //     if (connected && !isPaused) {
+    //         interval = setInterval(() => {
+    //             setTimer((prevTimer) => {
+    //                 const newTimer = prevTimer + 1;
+    //                 if (sessionCode) {
+    //                     const sessionRef = ref(database, `sessions/${sessionCode}`);
+    //                     update(sessionRef, { timer: newTimer });
+    //                 }
+    //                 return newTimer;
+    //             });
+    //         }, 1000);
+    //     } else {
+    //         clearInterval(interval);
+    //     }
+    //     return () => clearInterval(interval);
+    // }, [connected, isPaused, sessionCode]);
+
+	useEffect(() => {
+		let interval = null;
+		let syncInterval = null;
+	
+		if (connected && !isPaused) {
+			interval = setInterval(() => {
+				setTimer((prevTimer) => prevTimer + 1);
+			}, 1000);
+	
+			syncInterval = setInterval(() => {
+				const sessionRef = ref(database, `sessions/${sessionCode}`);
+				update(sessionRef, { timer: timer });
+			}, 5000);
+		} else {
+			clearInterval(interval);
+			clearInterval(syncInterval);
+		}
+	
+		return () => {
+			clearInterval(interval);
+			clearInterval(syncInterval);
+		};
+	}, [connected, isPaused, sessionCode, timer]);
+
+	useEffect(() => {
+		if (sessionCode) {
+			const sessionRef = ref(database, `sessions/${sessionCode}`);
+	
+			onValue(sessionRef, (snapshot) => {
+				const data = snapshot.val();
+				if (data) {
+					if (typeof data.isPaused !== 'undefined') {
+						setIsPaused(data.isPaused);
+					}
+					if (typeof data.timer !== 'undefined') {
+						setTimer(data.timer);
+					}
+				}
+			});
+	
+			return () => sessionRef.off();
+		}
+	}, [sessionCode]);
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -86,6 +133,7 @@ const App = () => {
             const device = await connectToDevice((event) => handleCharacteristicValueChanged(event, setHeartRate, setRrPeaks, setHeartRateData, setHrvData));
 			setConnected(true);
 			setDeviceName(device.device.name)
+			setIsDeviceConnector(true);
             const generatedCode = Math.random().toString(36).substr(2, 6).toUpperCase();
             setSessionCode(generatedCode);
             const sessionRef = ref(database, `sessions/${generatedCode}`);
@@ -96,35 +144,49 @@ const App = () => {
         setIsConnecting(false);
     };
 
-
     const handleTogglePause = async () => {
-        try {
-            await togglePause(isPaused, (event) => handleCharacteristicValueChanged(event, setHeartRate, setRrPeaks, setHeartRateData, setHrvData));
-            setIsPaused(!isPaused);
-        } catch (error) {
-            console.error('Error toggling pause:', error);
-        }
-    };
+		try {
+			await togglePause(isPaused, (event) => handleCharacteristicValueChanged(event, setHeartRate, setRrPeaks, setHeartRateData, setHrvData));
+			setIsPaused(!isPaused);
+	
+			const sessionRef = ref(database, `sessions/${sessionCode}`);
+			update(sessionRef, { isPaused: !isPaused });
+		} catch (error) {
+			console.error('Error toggling pause:', error);
+		}
+	};
 
     const handleStopAndDisconnect = async () => {
-        try {
-            await stopAndDisconnect((event) => handleCharacteristicValueChanged(event, setHeartRate, setRrPeaks, setHeartRateData, setHrvData, setTags));
-            setConnected(false);
-            setIsPaused(false);
-            setTimer(0);
-            setSummaryData({
-                heartRateData: heartRateData,
-                hrvData: hrvData,
-                tags: tags,
-            });
-            setHeartRateData([]);
-            setHrvData([]);
-            setTags([]);
-            setShowSummary(true);
-        } catch (error) {
-            console.error('Error stopping and disconnecting:', error);
-        }
-    };
+		if (isDeviceConnector) {
+			try {
+				await stopAndDisconnect((event) => handleCharacteristicValueChanged(event, setHeartRate, setRrPeaks, setHeartRateData, setHrvData, setTags));
+				setConnected(false);
+				setIsPaused(false);
+				setTimer(0);
+				setSummaryData({
+					heartRateData: heartRateData,
+					hrvData: hrvData,
+					tags: tags,
+				});
+				setHeartRateData([]);
+				setHrvData([]);
+				setTags([]);
+				setShowSummary(true);
+				setJoinedUserSummary(false);
+			} catch (error) {
+				console.error('Error stopping and disconnecting:', error);
+			}
+		} else {
+			// If a user joins a session, generate summary without disconnecting device
+			setSummaryData({
+				heartRateData: heartRateData,
+				hrvData: hrvData,
+				tags: tags,
+			});
+			setShowSummary(true);
+			setJoinedUserSummary(true);
+		}
+	};
 
     const addTag = (color, type) => {
         const newTag = {
@@ -189,6 +251,7 @@ const App = () => {
             });
             setOpenModal(false);
         }
+		setIsDeviceConnector(false);
     };
 
     useEffect(() => {
@@ -237,7 +300,7 @@ const App = () => {
 						<Switch checked={darkMode} onChange={toggleDarkMode} sx={{ mx: 0.5 }} />
 						<Brightness2Icon sx={{ transform: 'rotate(180deg)', marginLeft: 0.5 }} />
 					</Box>
-					{connected && (
+					{connected && !showSummary && (
 						<>
 							<Typography variant="h6" sx={{ marginRight: 4 }}>
 								{formatTime(timer)}
@@ -324,6 +387,7 @@ const App = () => {
 						hrvData={summaryData.hrvData}
 						tags={summaryData.tags}
 						onConnectNewDevice={handleConnectNewDevice}
+						showControls={!joinedUserSummary} // Solo muestra los controles si no es un usuario unido
 					/>
 				) : (
 					connected && (
@@ -367,52 +431,52 @@ const App = () => {
 								<Grid item xs={12} md={6}>
 									<Card sx={{ height: '100%' }}>
 										<CardContent>
-											<HRVSculpture hrv={hrvData.length ? hrvData[hrvData.length - 1].toFixed(2) : null} />
-										</CardContent>
-									</Card>
-								</Grid>
-								<Grid item xs={12} md={6}>
-									<Card sx={{ height: '100%' }}>
-										<CardContent>
-											<Box display="flex" justifyContent="space-between" alignItems="center">
-												<Typography variant="h6">Heart Rate and HRV Chart</Typography>
-												<IconButton onClick={toggleChartVisibility}>
-													{chartVisible ? <VisibilityOff /> : <Visibility />}
-												</IconButton>
-												<Box>
-													<Button onClick={() => addTag('orange', 'Tag A')} sx={{ marginRight: 1 }}>Add Orange Tag</Button>
-													<Button onClick={() => addTag('#8267EF', 'Tag B')}>Add Purple Tag</Button>
-												</Box>
-											</Box>
-											{chartVisible ? (
-												(heartRateData.length > 0 && hrvData.length > 0) ? (
-													<HeartRateChart
-														heartRateData={heartRateData}
-														hrvData={hrvData}
-														tags={tags}
-														isSummary={false}
-													/>
-												) : (
-													<Typography variant="subtitle1" sx={{ textAlign: 'center', marginTop: 2 }}>
-														Waiting for both Heart Rate and HRV data...
-													</Typography>
-												)
-											) : (
-												<Typography variant="subtitle1" sx={{ textAlign: 'center', marginTop: 2 }}>Chart Hidden</Typography>
-											)}
-										</CardContent>
-									</Card>
-								</Grid>
-								<Grid item xs={12} md={6}>
-									<Card sx={{ height: '100%' }}>
-										<CardContent sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-											<Box sx={{ flex: '1 1 auto', overflow: 'auto' }}>
-												<Typography variant="h6">Tags</Typography>
-												<TableContainer component={Paper} sx={{ boxShadow: 'none', maxHeight: 400 }}>
-													<Table>
-														<TableHead>
-															<TableRow>
-															<TableCell>Time Elapsed</TableCell>
+										<HRVSculpture hrv={hrvData.length ? hrvData[hrvData.length - 1].toFixed(2) : null} />
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <Card sx={{ height: '100%' }}>
+                                    <CardContent>
+                                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                                            <Typography variant="h6">Heart Rate and HRV Chart</Typography>
+                                            <IconButton onClick={toggleChartVisibility}>
+                                                {chartVisible ? <VisibilityOff /> : <Visibility />}
+                                            </IconButton>
+                                            <Box>
+                                                <Button onClick={() => addTag('orange', 'Tag A')} sx={{ marginRight: 1 }}>Add Orange Tag</Button>
+                                                <Button onClick={() => addTag('#8267EF', 'Tag B')}>Add Purple Tag</Button>
+                                            </Box>
+                                        </Box>
+                                        {chartVisible ? (
+                                            (heartRateData.length > 0 && hrvData.length > 0) ? (
+                                                <HeartRateChart
+                                                    heartRateData={heartRateData}
+                                                    hrvData={hrvData}
+                                                    tags={tags}
+                                                    isSummary={false}
+                                                />
+                                            ) : (
+                                                <Typography variant="subtitle1" sx={{ textAlign: 'center', marginTop: 2 }}>
+                                                    Waiting for both Heart Rate and HRV data...
+                                                </Typography>
+                                            )
+                                        ) : (
+                                            <Typography variant="subtitle1" sx={{ textAlign: 'center', marginTop: 2 }}>Chart Hidden</Typography>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <Card sx={{ height: '100%' }}>
+                                    <CardContent sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                        <Box sx={{ flex: '1 1 auto', overflow: 'auto' }}>
+                                            <Typography variant="h6">Tags</Typography>
+                                            <TableContainer component={Paper} sx={{ boxShadow: 'none', maxHeight: 400 }}>
+                                                <Table>
+                                                    <TableHead>
+                                                        <TableRow>
+                                                            <TableCell>Time Elapsed</TableCell>
                                                             <TableCell>Heart Rate (BPM)</TableCell>
                                                             <TableCell>HRV</TableCell>
                                                             <TableCell>Type</TableCell>
