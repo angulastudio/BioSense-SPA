@@ -24,6 +24,7 @@ import { connectToDevice, togglePause, stopAndDisconnect, handleCharacteristicVa
 import { database } from './firebaseConfig';
 import { ref, set, onValue, update } from 'firebase/database';
 
+
 const App = () => {
     const { darkMode, toggleDarkMode } = useContext(ThemeContext);
 	const [isDeviceConnector, setIsDeviceConnector] = useState(false);
@@ -50,24 +51,68 @@ const App = () => {
     const [sessionCode, setSessionCode] = useState('');
     const [openModal, setOpenModal] = useState(false);
 
-    useEffect(() => {
-        let interval = null;
-        if (connected && !isPaused) {
-            interval = setInterval(() => {
-                setTimer((prevTimer) => {
-                    const newTimer = prevTimer + 1;
-                    if (sessionCode) {
-                        const sessionRef = ref(database, `sessions/${sessionCode}`);
-                        update(sessionRef, { timer: newTimer });
-                    }
-                    return newTimer;
-                });
-            }, 1000);
-        } else {
-            clearInterval(interval);
-        }
-        return () => clearInterval(interval);
-    }, [connected, isPaused, sessionCode]);
+    // useEffect(() => {
+    //     let interval = null;
+    //     if (connected && !isPaused) {
+    //         interval = setInterval(() => {
+    //             setTimer((prevTimer) => {
+    //                 const newTimer = prevTimer + 1;
+    //                 if (sessionCode) {
+    //                     const sessionRef = ref(database, `sessions/${sessionCode}`);
+    //                     update(sessionRef, { timer: newTimer });
+    //                 }
+    //                 return newTimer;
+    //             });
+    //         }, 1000);
+    //     } else {
+    //         clearInterval(interval);
+    //     }
+    //     return () => clearInterval(interval);
+    // }, [connected, isPaused, sessionCode]);
+
+	useEffect(() => {
+		let interval = null;
+		let syncInterval = null;
+	
+		if (connected && !isPaused) {
+			interval = setInterval(() => {
+				setTimer((prevTimer) => prevTimer + 1);
+			}, 1000);
+	
+			syncInterval = setInterval(() => {
+				const sessionRef = ref(database, `sessions/${sessionCode}`);
+				update(sessionRef, { timer: timer });
+			}, 5000);
+		} else {
+			clearInterval(interval);
+			clearInterval(syncInterval);
+		}
+	
+		return () => {
+			clearInterval(interval);
+			clearInterval(syncInterval);
+		};
+	}, [connected, isPaused, sessionCode, timer]);
+
+	useEffect(() => {
+		if (sessionCode) {
+			const sessionRef = ref(database, `sessions/${sessionCode}`);
+	
+			onValue(sessionRef, (snapshot) => {
+				const data = snapshot.val();
+				if (data) {
+					if (typeof data.isPaused !== 'undefined') {
+						setIsPaused(data.isPaused);
+					}
+					if (typeof data.timer !== 'undefined') {
+						setTimer(data.timer);
+					}
+				}
+			});
+	
+			return () => sessionRef.off();
+		}
+	}, [sessionCode]);
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -100,13 +145,16 @@ const App = () => {
     };
 
     const handleTogglePause = async () => {
-        try {
-            await togglePause(isPaused, (event) => handleCharacteristicValueChanged(event, setHeartRate, setRrPeaks, setHeartRateData, setHrvData));
-            setIsPaused(!isPaused);
-        } catch (error) {
-            console.error('Error toggling pause:', error);
-        }
-    };
+		try {
+			await togglePause(isPaused, (event) => handleCharacteristicValueChanged(event, setHeartRate, setRrPeaks, setHeartRateData, setHrvData));
+			setIsPaused(!isPaused);
+	
+			const sessionRef = ref(database, `sessions/${sessionCode}`);
+			update(sessionRef, { isPaused: !isPaused });
+		} catch (error) {
+			console.error('Error toggling pause:', error);
+		}
+	};
 
     const handleStopAndDisconnect = async () => {
 		if (isDeviceConnector) {
