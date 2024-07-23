@@ -15,6 +15,7 @@
     "axios": "^1.6.8",
     "chart.js": "^4.4.3",
     "chartjs-plugin-annotation": "^3.0.1",
+    "firebase": "^10.12.4",
     "gh-pages": "^6.1.1",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
@@ -32,7 +33,6 @@
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
-    
   },
   "eslintConfig": {
     "extends": [
