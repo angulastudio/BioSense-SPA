@@ -7,7 +7,7 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 Chart.register(...registerables, annotationPlugin);
 
 const HeartRateChart = ({ heartRateData, hrvData, tags, maxMinData, isSummary = false }) => {
-  const MAX_TIME_WINDOW = 15; // 15 seconds
+  const MAX_TIME_WINDOW = 60; // 60 seconds
   const dataLength = heartRateData.length;
 
   let filteredHeartRateData = heartRateData;
