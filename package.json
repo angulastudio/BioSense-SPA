@@ -1,9 +1,16 @@
 {
   "name": "biosense-spa",
   "version": "0.1.0",
-  "private": true,
   "homepage": "https://angulastudio.github.io/BioSense-SPA",
+  "private": true,
   "dependencies": {
+    "@capacitor-community/bluetooth-le": "^6.0.1",
+    "@capacitor/android": "^6.1.1",
+    "@capacitor/cli": "^6.1.1",
+    "@capacitor/core": "^6.1.1",
+    "@capacitor/device": "^6.0.0",
+    "@capacitor/ios": "^6.1.1",
+    "@capacitor/status-bar": "^6.0.0",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
     "@mui/icons-material": "^5.16.0",
@@ -33,12 +40,6 @@
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
   },
   "browserslist": {
     "production": [
