@@ -1,19 +1,23 @@
 {
   "files": {
     "main.css": "/BioSense-SPA/static/css/main.e6c13ad2.css",
-    "main.js": "/BioSense-SPA/static/js/main.bae8acb9.js",
+    "main.js": "/BioSense-SPA/static/js/main.a9a21ff9.js",
     "static/js/213.85bb1b41.chunk.js": "/BioSense-SPA/static/js/213.85bb1b41.chunk.js",
-    "static/js/849.526ff60e.chunk.js": "/BioSense-SPA/static/js/849.526ff60e.chunk.js",
+    "static/js/732.4afdb953.chunk.js": "/BioSense-SPA/static/js/732.4afdb953.chunk.js",
+    "static/js/344.5fdfcfea.chunk.js": "/BioSense-SPA/static/js/344.5fdfcfea.chunk.js",
+    "static/js/950.8d134478.chunk.js": "/BioSense-SPA/static/js/950.8d134478.chunk.js",
     "static/js/453.b5092c5d.chunk.js": "/BioSense-SPA/static/js/453.b5092c5d.chunk.js",
     "index.html": "/BioSense-SPA/index.html",
     "main.e6c13ad2.css.map": "/BioSense-SPA/static/css/main.e6c13ad2.css.map",
-    "main.bae8acb9.js.map": "/BioSense-SPA/static/js/main.bae8acb9.js.map",
+    "main.a9a21ff9.js.map": "/BioSense-SPA/static/js/main.a9a21ff9.js.map",
     "213.85bb1b41.chunk.js.map": "/BioSense-SPA/static/js/213.85bb1b41.chunk.js.map",
-    "849.526ff60e.chunk.js.map": "/BioSense-SPA/static/js/849.526ff60e.chunk.js.map",
+    "732.4afdb953.chunk.js.map": "/BioSense-SPA/static/js/732.4afdb953.chunk.js.map",
+    "344.5fdfcfea.chunk.js.map": "/BioSense-SPA/static/js/344.5fdfcfea.chunk.js.map",
+    "950.8d134478.chunk.js.map": "/BioSense-SPA/static/js/950.8d134478.chunk.js.map",
     "453.b5092c5d.chunk.js.map": "/BioSense-SPA/static/js/453.b5092c5d.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.e6c13ad2.css",
-    "static/js/main.bae8acb9.js"
+    "static/js/main.a9a21ff9.js"
   ]
 }
