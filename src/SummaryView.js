@@ -49,7 +49,7 @@ const calculateMinHrvData = (data) => {
  * @param {Array} props.tags - Array of tag objects.
  * @param {Function} props.onConnectNewDevice - Function to handle connecting a new device.
  */
-const SummaryView = ({ heartRateData, hrvData, tags, onConnectNewDevice }) => {
+const SummaryView = ({ heartRateData, hrvData, runningAverageHRV, tags, sessionName, totalTime, onConnectNewDevice }) => {
 	const averageHeartRate = (heartRateData.reduce((acc, curr) => acc + curr, 0) / heartRateData.length).toFixed(2);
 	const averageHrv = (hrvData.reduce((acc, curr) => acc + curr, 0) / hrvData.length).toFixed(2);
 
@@ -94,6 +94,9 @@ const SummaryView = ({ heartRateData, hrvData, tags, onConnectNewDevice }) => {
 		<Box sx={{ width: '100%', padding: '16px', boxSizing: 'border-box' }}>
 			<Typography variant="h4" gutterBottom>Session Summary</Typography>
 			<Grid container spacing={2} sx={{ marginTop: 2, width: '100%', paddingX: '16px', boxSizing: 'border-box' }} id="summary-content">
+				<Typography variant="h5">
+					Session Name: {sessionName}  {totalTime}
+				</Typography>
 				<Grid item xs={12}>
 					<Card>
 						<CardContent>
@@ -131,7 +134,8 @@ const SummaryView = ({ heartRateData, hrvData, tags, onConnectNewDevice }) => {
 						<CardContent>
 							<HeartRateChart 
 									heartRateData={heartRateData} 
-									hrvData={hrvData} 
+									hrvData={hrvData}
+									runningAverageHRV={runningAverageHRV} 
 									tags={tags} 
 									maxMinData={maxMinData} 
 									isSummary={true} 

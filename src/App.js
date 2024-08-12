@@ -45,6 +45,7 @@ const App = () => {
     const [chartVisible, setChartVisible] = useState(true);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [runningAverageHRVData, setRunningAverageHRVData] = useState([]);
     const [showSummary, setShowSummary] = useState(false);
     const [summaryData, setSummaryData] = useState({
         heartRateData: [],
@@ -54,6 +55,8 @@ const App = () => {
     const [joinedUserSummary, setJoinedUserSummary] = useState(false);
     const [sessionCode, setSessionCode] = useState('');
     const [openModal, setOpenModal] = useState(false);
+    const [sessionName, setSessionName] = useState('');
+    const [isSessionNameModalOpen, setIsSessionNameModalOpen] = useState(false);
 
     useEffect(() => {
         const setupStatusBar = async () => {
@@ -118,6 +121,25 @@ const App = () => {
         }
     }, [sessionCode]);
 
+    useEffect(() => {
+        const calculateRunningAverage = (data, windowSize) => {
+            if (data.length < windowSize) {
+                return [];
+            }
+            return data.map((_, index, array) => {
+                if (index < windowSize - 1) return null;
+                const windowData = array.slice(index - windowSize + 1, index + 1);
+                const sum = windowData.reduce((acc, val) => acc + val, 0);
+                return (sum / windowSize).toFixed(2);
+            }).filter(value => value !== null);
+        };
+    
+        const newRunningAverageHRV = calculateRunningAverage(hrvData, 5);
+    
+        setRunningAverageHRVData(newRunningAverageHRV);
+    
+    }, [hrvData]);
+
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
     };
@@ -142,6 +164,8 @@ const App = () => {
             setSessionCode(generatedCode);
             const sessionRef = ref(database, `sessions/${generatedCode}`);
             set(sessionRef, { heartRateData: [], hrvData: [], tags: [], timer: 0, rrPeaks: [], heartRate: 0 });
+
+            setIsSessionNameModalOpen(true);
         } catch (error) {
             console.error('Error connecting to device:', error);
         }
@@ -164,13 +188,17 @@ const App = () => {
         if (isDeviceConnector) {
             try {
                 await stopAndDisconnect((event) => handleCharacteristicValueChanged(event, setHeartRate, setRrPeaks, setHeartRateData, setHrvData, setTags));
+
                 setConnected(false);
                 setIsPaused(false);
+
+                const formattedTime = formatTime(timer);
                 setTimer(0);
                 setSummaryData({
                     heartRateData: heartRateData,
                     hrvData: hrvData,
                     tags: tags,
+                    totalTime: formattedTime
                 });
                 setHeartRateData([]);
                 setHrvData([]);
@@ -181,10 +209,13 @@ const App = () => {
                 console.error('Error stopping and disconnecting:', error);
             }
         } else {
+            const formattedTime = formatTime(timer);
+
             setSummaryData({
                 heartRateData: heartRateData,
                 hrvData: hrvData,
                 tags: tags,
+                totalTime: formattedTime
             });
             setShowSummary(true);
             setJoinedUserSummary(true);
@@ -289,7 +320,17 @@ const App = () => {
         }
     }, [connected, sessionCode]);
 
+    const calculateRunningAverage = (data, windowSize) => {
+        if (data.length < windowSize) {
+            return null;
+        }
+        const windowData = data.slice(-windowSize);
+        const sum = windowData.reduce((acc, val) => acc + val, 0);
+        return (sum / windowSize).toFixed(2);
+    };
+
     return (
+        
         <Box sx={{ width: '100%', overflowX: 'hidden' }}>
             <AppBar position="static" sx={{ width: '100%' }}>
                 <Toolbar>
@@ -355,6 +396,54 @@ const App = () => {
                         </Grid>
                     </Grid>
                 )}
+                <Modal
+                    aria-labelledby="session-name-modal"
+                    aria-describedby="session-name-modal-description"
+                    open={isSessionNameModalOpen}
+                    onClose={() => setIsSessionNameModalOpen(false)}
+                    closeAfterTransition
+                    BackdropComponent={Backdrop}
+                    BackdropProps={{
+                        timeout: 500,
+                    }}
+                >
+                    <Fade in={isSessionNameModalOpen}>
+                        <Box sx={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            width: 400,
+                            bgcolor: 'background.paper',
+                            border: '2px solid #000',
+                            boxShadow: 24,
+                            p: 4,
+                        }}>
+                            <Typography id="session-name-modal" variant="h6" component="h2">
+                                Enter Session Name
+                            </Typography>
+                            <TextField
+                                label="Session Name"
+                                variant="outlined"
+                                fullWidth
+                                margin="normal"
+                                value={sessionName}
+                                onChange={(e) => setSessionName(e.target.value)}
+                            />
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                fullWidth
+                                onClick={() => {
+                                    setIsSessionNameModalOpen(false);
+                                    // Aquí puedes realizar cualquier acción adicional con el Session Name si es necesario
+                                }}
+                            >
+                                Confirm
+                            </Button>
+                        </Box>
+                    </Fade>
+                </Modal>
                 {!showSummary && !connected && !navigator.bluetooth && !isMobile && (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
                         <Card sx={{ width: '80%', maxWidth: '600px' }}>
@@ -389,7 +478,10 @@ const App = () => {
                     <SummaryView
                         heartRateData={summaryData.heartRateData}
                         hrvData={summaryData.hrvData}
+                        runningAverageHRV={runningAverageHRVData} 
                         tags={summaryData.tags}
+                        sessionName={sessionName}
+                        totalTime={summaryData.totalTime} 
                         onConnectNewDevice={handleConnectNewDevice}
                         showControls={!joinedUserSummary}
                     />
@@ -418,16 +510,36 @@ const App = () => {
                                                 </Typography>
                                                 <Typography variant="h4">{rrPeaks.length > 0 ? rrPeaks[rrPeaks.length - 1][0].toFixed(2) : 'No data'}</Typography>
                                             </Box>
-                                            <Box sx={{ display: 'flex', flexDirection: 'column', marginTop: 2 }}>
-                                                <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center' }}>
-                                                    HRV (RMSSD)
-                                                    <Tooltip title="HRV (Heart Rate Variability) is the variation in time between heartbeats. Higher HRV is generally associated with better cardiovascular fitness and lower stress." placement="right">
-                                                        <IconButton sx={{ marginLeft: 1 }}>
-                                                            <InfoOutlinedIcon fontSize="small" />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                </Typography>
-                                                <Typography variant="h4">{hrvData.length > 0 ? hrvData[hrvData.length - 1].toFixed(2) : 'No data'}</Typography>
+                                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
+                                                {/* HRV */}
+                                                <Box sx={{ flex: 1 }}>
+                                                    <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center' }}>
+                                                        HRV (RMSSD)
+                                                        <Tooltip title="HRV (Heart Rate Variability) is the variation in time between heartbeats. Higher HRV is generally associated with better cardiovascular fitness and lower stress." placement="right">
+                                                            <IconButton sx={{ marginLeft: 1 }}>
+                                                                <InfoOutlinedIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </Typography>
+                                                    <Typography variant="h4">
+                                                        {hrvData.length > 0 ? hrvData[hrvData.length - 1].toFixed(2) : 'No data'}
+                                                    </Typography>
+                                                </Box>
+
+                                                {/* Running Avg */}
+                                                <Box sx={{ flex: 1, color: 'gray' }}>
+                                                    <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center' }}>
+                                                        Running Avg
+                                                        <Tooltip title="Running average of the last HRV values." placement="right">
+                                                            <IconButton sx={{ marginLeft: 1, color: 'gray' }}>
+                                                                <InfoOutlinedIcon fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </Typography>
+                                                    <Typography variant="h4" sx={{ textAlign: 'left' }}>
+                                                        {calculateRunningAverage(hrvData, 5) || 'No data'}
+                                                    </Typography>
+                                                </Box>
                                             </Box>
                                         </CardContent>
                                     </Card>
@@ -457,6 +569,7 @@ const App = () => {
                                                     <HeartRateChart
                                                         heartRateData={heartRateData}
                                                         hrvData={hrvData}
+                                                        runningAverageHRV={runningAverageHRVData} 
                                                         tags={tags}
                                                         isSummary={false}
                                                     />
