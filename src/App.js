@@ -57,6 +57,7 @@ const App = () => {
     const [openModal, setOpenModal] = useState(false);
     const [sessionName, setSessionName] = useState('');
     const [isSessionNameModalOpen, setIsSessionNameModalOpen] = useState(false);
+    const [statusBarHeight, setStatusBarHeight] = useState(0);
 
     useEffect(() => {
         const setupStatusBar = async () => {
@@ -139,6 +140,21 @@ const App = () => {
         setRunningAverageHRVData(newRunningAverageHRV);
     
     }, [hrvData]);
+
+
+    useEffect(() => {
+        const setupStatusBar = async () => {
+            const info = await Device.getInfo();
+            if (info.platform === 'ios' || info.platform === 'android') {
+                const statusBarInfo = await StatusBar.getInfo();
+                setStatusBarHeight(statusBarInfo.height || 20);
+                await StatusBar.hide();
+            }
+        };
+    
+        setupStatusBar();
+    }, []);
+
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -330,8 +346,7 @@ const App = () => {
     };
 
     return (
-        
-        <Box sx={{ width: '100%', overflowX: 'hidden' }}>
+        <Box sx={{ width: '100%', paddingTop: `${statusBarHeight+15}px`, overflowX: 'hidden' }}>
             <AppBar position="static" sx={{ width: '100%' }}>
                 <Toolbar>
                     <IconButton edge="start" color="inherit" aria-label="menu">
@@ -340,11 +355,13 @@ const App = () => {
                     <Typography variant="h6" sx={{ flexGrow: 1 }}>
                         Biosense
                     </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', marginRight: 4 }}>
-                        <WbSunnyIcon sx={{ marginRight: 0.5 }} />
-                        <Switch checked={darkMode} onChange={toggleDarkMode} sx={{ mx: 0.5 }} />
-                        <Brightness2Icon sx={{ transform: 'rotate(180deg)', marginLeft: 0.5 }} />
-                    </Box>
+                    {!isMobile && (
+                        <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', marginRight: 4 }}>
+                            <WbSunnyIcon sx={{ marginRight: 0.5 }} />
+                            <Switch checked={darkMode} onChange={toggleDarkMode} sx={{ mx: 0.5 }} />
+                            <Brightness2Icon sx={{ transform: 'rotate(180deg)', marginLeft: 0.5 }} />
+                        </Box>
+                    )}
                     {connected && !showSummary && (
                         <>
                             <Typography variant="h6" sx={{ marginRight: 4 }}>
@@ -510,37 +527,41 @@ const App = () => {
                                                 </Typography>
                                                 <Typography variant="h4">{rrPeaks.length > 0 ? rrPeaks[rrPeaks.length - 1][0].toFixed(2) : 'No data'}</Typography>
                                             </Box>
-                                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
+                                            <Grid container spacing={2} sx={{ marginTop: 2 }}>
                                                 {/* HRV */}
-                                                <Box sx={{ flex: 1 }}>
-                                                    <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center' }}>
-                                                        HRV (RMSSD)
-                                                        <Tooltip title="HRV (Heart Rate Variability) is the variation in time between heartbeats. Higher HRV is generally associated with better cardiovascular fitness and lower stress." placement="right">
-                                                            <IconButton sx={{ marginLeft: 1 }}>
-                                                                <InfoOutlinedIcon fontSize="small" />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    </Typography>
-                                                    <Typography variant="h4">
-                                                        {hrvData.length > 0 ? hrvData[hrvData.length - 1].toFixed(2) : 'No data'}
-                                                    </Typography>
-                                                </Box>
+                                                <Grid item xs={12} sm={6}>
+                                                    <Box>
+                                                        <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center' }}>
+                                                            HRV (RMSSD)
+                                                            <Tooltip title="HRV (Heart Rate Variability) is the variation in time between heartbeats. Higher HRV is generally associated with better cardiovascular fitness and lower stress." placement="right">
+                                                                <IconButton sx={{ marginLeft: 1 }}>
+                                                                    <InfoOutlinedIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        </Typography>
+                                                        <Typography variant="h4">
+                                                            {hrvData.length > 0 ? hrvData[hrvData.length - 1].toFixed(2) : 'No data'}
+                                                        </Typography>
+                                                    </Box>
+                                                </Grid>
 
                                                 {/* Running Avg */}
-                                                <Box sx={{ flex: 1, color: 'gray' }}>
-                                                    <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center' }}>
-                                                        Running Avg
-                                                        <Tooltip title="Running average of the last HRV values." placement="right">
-                                                            <IconButton sx={{ marginLeft: 1, color: 'gray' }}>
-                                                                <InfoOutlinedIcon fontSize="small" />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    </Typography>
-                                                    <Typography variant="h4" sx={{ textAlign: 'left' }}>
-                                                        {calculateRunningAverage(hrvData, 5) || 'No data'}
-                                                    </Typography>
-                                                </Box>
-                                            </Box>
+                                                <Grid item xs={12} sm={6}>
+                                                    <Box sx={{ color: 'gray' }}>
+                                                        <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center' }}>
+                                                            Running Avg
+                                                            <Tooltip title="Running average of the last HRV values." placement="right">
+                                                                <IconButton sx={{ marginLeft: 1, color: 'gray' }}>
+                                                                    <InfoOutlinedIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        </Typography>
+                                                        <Typography variant="h4" sx={{ textAlign: 'left' }}>
+                                                            {calculateRunningAverage(hrvData, 5) || 'No data'}
+                                                        </Typography>
+                                                    </Box>
+                                                </Grid>
+                                            </Grid>
                                         </CardContent>
                                     </Card>
                                 </Grid>

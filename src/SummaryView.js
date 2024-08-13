@@ -4,51 +4,6 @@ import HeartRateChart from './HeartRateChart';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-
-/**
- * Calculates the maximum and minimum values from a dataset.
- * @param {Array} data - Array of numerical values.
- * @returns {Object} - Object containing max, min, maxIndex, and minIndex.
- */
-const calculateMaxMinData = (data) => {
-	const maxValue = Math.max(...data);
-	const minValue = Math.min(...data);
-	const maxIndex = data.indexOf(maxValue);
-	const minIndex = data.indexOf(minValue);
-
-	return {
-		max: maxValue,
-		min: minValue,
-		maxIndex: maxIndex,
-		minIndex: minIndex
-	};
-};
-
-/**
- * Calculates the minimum HRV value ignoring zero values.
- * @param {Array} data - Array of HRV values.
- * @returns {Object} - Object containing min value and minIndex.
- */
-const calculateMinHrvData = (data) => {
-	const filteredData = data.filter(value => value > 0); // Ignorar valores de 0
-	if (filteredData.length === 0) return { min: 0, minIndex: -1 }; // Caso donde no hay valores diferentes de 0
-	const minValue = Math.min(...filteredData);
-	const minIndex = data.indexOf(minValue);
-
-	return {
-		min: minValue,
-		minIndex: minIndex
-	};
-};
-
-/**
- * Component to display the summary view of a session.
- * @param {Object} props - Component props.
- * @param {Array} props.heartRateData - Array of heart rate data.
- * @param {Array} props.hrvData - Array of HRV data.
- * @param {Array} props.tags - Array of tag objects.
- * @param {Function} props.onConnectNewDevice - Function to handle connecting a new device.
- */
 const SummaryView = ({ heartRateData, hrvData, runningAverageHRV, tags, sessionName, totalTime, onConnectNewDevice }) => {
 	const averageHeartRate = (heartRateData.reduce((acc, curr) => acc + curr, 0) / heartRateData.length).toFixed(2);
 	const averageHrv = (hrvData.reduce((acc, curr) => acc + curr, 0) / hrvData.length).toFixed(2);
@@ -56,6 +11,22 @@ const SummaryView = ({ heartRateData, hrvData, runningAverageHRV, tags, sessionN
 	const fiveMinutes = 5 * 60;
 	const averageFirst5MinutesHRV = hrvData.slice(0, fiveMinutes).reduce((acc, curr) => acc + curr, 0) / Math.min(fiveMinutes, hrvData.length);
 	const averageLast5MinutesHRV = hrvData.slice(-fiveMinutes).reduce((acc, curr) => acc + curr, 0) / Math.min(fiveMinutes, hrvData.length);
+
+	const calculateMaxMinData = (data) => {
+		const maxValue = Math.max(...data);
+		const minValue = Math.min(...data);
+		const maxIndex = data.indexOf(maxValue);
+		const minIndex = data.indexOf(minValue);
+		return { max: maxValue, min: minValue, maxIndex: maxIndex, minIndex: minIndex };
+	};
+
+	const calculateMinHrvData = (data) => {
+		const filteredData = data.filter(value => value > 0);
+		if (filteredData.length === 0) return { min: 0, minIndex: -1 };
+		const minValue = Math.min(...filteredData);
+		const minIndex = data.indexOf(minValue);
+		return { min: minValue, minIndex: minIndex };
+	};
 
 	const heartRateStats = calculateMaxMinData(heartRateData);
 	const hrvStats = calculateMaxMinData(hrvData);
@@ -74,9 +45,6 @@ const SummaryView = ({ heartRateData, hrvData, runningAverageHRV, tags, sessionN
 		averageHRV: averageHrv
 	};
 
-	/**
-	 * Generates a PDF of the summary view.
-	 */
 	const downloadPDF = () => {
 		const input = document.getElementById('summary-content');
 		html2canvas(input).then((canvas) => {
@@ -92,34 +60,46 @@ const SummaryView = ({ heartRateData, hrvData, runningAverageHRV, tags, sessionN
 
 	return (
 		<Box sx={{ width: '100%', padding: '16px', boxSizing: 'border-box' }}>
-			<Typography variant="h4" gutterBottom>Session Summary</Typography>
 			<Grid container spacing={2} sx={{ marginTop: 2, width: '100%', paddingX: '16px', boxSizing: 'border-box' }} id="summary-content">
-				<Typography variant="h5">
-					Session Name: {sessionName}  {totalTime}
-				</Typography>
+				<Typography variant="h4" gutterBottom>Session Summary</Typography>
 				<Grid item xs={12}>
 					<Card>
 						<CardContent>
 							<Grid container spacing={2}>
-								<Grid item xs={3} textAlign="center">
-									<Typography variant="body1">Average Heart Rate (BPM)</Typography>
-									<Typography variant="h4" mb={2}>{(heartRateData.reduce((acc, curr) => acc + curr, 0) / heartRateData.length).toFixed(2)}</Typography>
-									<Typography variant="body1">Average HRV (RMSSD)</Typography>
-									<Typography variant="h4">{(hrvData.reduce((acc, curr) => acc + curr, 0) / hrvData.length).toFixed(2)}</Typography>
+								<Grid item xs={12} sm={6}>
+									<Typography variant="h5" gutterBottom>Session name: {sessionName}</Typography>
 								</Grid>
-								<Grid item xs={3} textAlign="center">
+							
+								<Grid item xs={12} sm={6}>
+									<Typography variant="h5" gutterBottom>Total time: {totalTime}</Typography>
+								</Grid>
+							</Grid>
+						</CardContent>
+					</Card>
+				</Grid>
+				<Grid item xs={12}>
+					<Card>
+						<CardContent>
+							<Grid container spacing={2}>
+								<Grid item xs={12} sm={6} md={3} textAlign="center">
+									<Typography variant="body1">Average Heart Rate (BPM)</Typography>
+									<Typography variant="h4" mb={2}>{averageHeartRate}</Typography>
+									<Typography variant="body1">Average HRV (RMSSD)</Typography>
+									<Typography variant="h4">{averageHrv}</Typography>
+								</Grid>
+								<Grid item xs={12} sm={6} md={3} textAlign="center">
 									<Typography variant="body1">First 5 Minutes HRV</Typography>
 									<Typography variant="h4" mb={2}>{averageFirst5MinutesHRV.toFixed(2)}</Typography>
 									<Typography variant="body1">Last 5 Minutes HRV</Typography>
 									<Typography variant="h4">{averageLast5MinutesHRV.toFixed(2)}</Typography>
 								</Grid>
-								<Grid item xs={3} textAlign="center">
+								<Grid item xs={12} sm={6} md={3} textAlign="center">
 									<Typography variant="body1">Max Heart Rate</Typography>
 									<Typography variant="h4" mb={2}>{maxMinData.maxHR}</Typography>
 									<Typography variant="body1">Min Heart Rate</Typography>
 									<Typography variant="h4">{maxMinData.minHR}</Typography>
 								</Grid>
-								<Grid item xs={3} textAlign="center">
+								<Grid item xs={12} sm={6} md={3} textAlign="center">
 									<Typography variant="body1">Max HRV</Typography>
 									<Typography variant="h4" mb={2}>{maxMinData.maxHRV}</Typography>
 									<Typography variant="body1">Min HRV</Typography>
