@@ -1,7 +1,7 @@
 {
   "name": "biosense-spa",
-  "version": "0.1.0",
   "homepage": "https://angulastudio.github.io/BioSense-SPA",
+  "version": "0.1.0",
   "private": true,
   "dependencies": {
     "@capacitor-community/bluetooth-le": "^6.0.1",

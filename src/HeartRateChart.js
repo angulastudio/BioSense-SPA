@@ -6,18 +6,20 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 
 Chart.register(...registerables, annotationPlugin);
 
-const HeartRateChart = ({ heartRateData, hrvData, tags, maxMinData, isSummary = false }) => {
+const HeartRateChart = ({ heartRateData, hrvData, runningAverageHRV, tags, maxMinData, isSummary = false }) => {
   const MAX_TIME_WINDOW = 60; // 60 seconds
   const dataLength = heartRateData.length;
 
   let filteredHeartRateData = heartRateData;
   let filteredHrvData = hrvData;
   let filteredTags = tags;
+  let filteredRunningAverageHRV = runningAverageHRV;
 
   if (!isSummary && dataLength > MAX_TIME_WINDOW) {
     filteredHeartRateData = heartRateData.slice(dataLength - MAX_TIME_WINDOW);
     filteredHrvData = hrvData.slice(dataLength - MAX_TIME_WINDOW);
     filteredTags = tags.filter(tag => tag.index >= dataLength - MAX_TIME_WINDOW);
+    filteredRunningAverageHRV = runningAverageHRV.slice(dataLength - MAX_TIME_WINDOW);
   }
 
   const chartData = {
@@ -39,6 +41,16 @@ const HeartRateChart = ({ heartRateData, hrvData, tags, maxMinData, isSummary = 
         fill: false,
         backgroundColor: 'rgb(54, 162, 235)',
         borderColor: 'rgba(54, 162, 235, 0.5)',
+        tension: 0.4,
+        pointRadius: 0,
+        yAxisID: 'y1',
+      },
+      {
+        label: 'Running Avg HRV',
+        data: filteredRunningAverageHRV,
+        fill: false,
+        backgroundColor: 'rgb(75, 192, 192)',
+        borderColor: 'rgba(75, 192, 192, 0.5)',
         tension: 0.4,
         pointRadius: 0,
         yAxisID: 'y1',
