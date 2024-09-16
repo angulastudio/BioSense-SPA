@@ -1,5 +1,6 @@
 {
   "name": "biosense-spa",
+  "homepage": "https://angulastudio.github.io/BioSense-SPA",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
